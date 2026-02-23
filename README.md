@@ -51,6 +51,7 @@ git push origin feature/your-feature-name
 ### 5. Open a Pull Request (PR)
 
 Go to GitHub/GitLab and open a PR from your feature branch into `main`. Get it reviewed, then merge.
+This makes it so that we can all approve on what the code does so we can all understand and move together
 
 ### 6. Clean up after merging
 
