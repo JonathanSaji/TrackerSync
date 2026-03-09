@@ -3,10 +3,8 @@ require("dotenv").config({ quiet: true }); // Load .env without warning if it do
 
 const OpenAI = require("openai");
 
-// const key = ""; // need to put key back in here before testing 
 
-
-const openai = new OpenAI({
+const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY
 });
 
