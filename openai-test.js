@@ -1,11 +1,10 @@
+require("dotenv").config();
+require("dotenv").config({ quiet: true }); // Load .env without warning if it doesn't exist, quieter in terminal
+
 const OpenAI = require("openai");
 
-const key = ""; // need to put key back in here before testing 
+// const key = ""; // need to put key back in here before testing 
 
-// Put your key here temporarily or use environment variable
-//const openai = new OpenAI({
-//apiKey: process.env.OPENAI_API_KEY || key
-//});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
