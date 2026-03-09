@@ -52,11 +52,11 @@ app.get('/api/subscriptions', (req, res) => {
   res.json(subscriptions);
 });
 
-// Add a subscription (expects JSON { name, amount, category, nextRenewal })
+// Add a subscription (expects JSON { name, cost, category, nextRenewal })
 app.post('/api/subscriptions', (req, res) => {
-  const { name, amount, category, nextRenewal } = req.body;
+  const { name, cost, category, nextRenewal } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
-  const row = [name, amount ?? null, category ?? null, nextRenewal ?? null];
+  const row = [name, cost ?? null, category ?? null, nextRenewal ?? null];
   subscriptions.push(row);
   persist();
   res.status(201).json(row);

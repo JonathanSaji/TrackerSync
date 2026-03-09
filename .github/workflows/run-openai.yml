@@ -1,0 +1,16 @@
+name: Run OpenAI Script
+
+on:
+  push:
+    branches:
+      - feature/backend  # or main branch
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run OpenAI test script
+        run: node openai-test.js
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
