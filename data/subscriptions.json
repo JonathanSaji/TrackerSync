@@ -1,0 +1,40 @@
+{
+  "subscriptions": [
+    {
+      "name": "Spotify",
+      "cost": 12,
+      "lastUsed": "Mar 5",
+      "emotionalValue": 8
+    },
+    {
+      "name": "ChatGPT",
+      "cost": 20,
+      "lastUsed": "Mar 8",
+      "emotionalValue": 10
+    },
+    {
+      "name": "YouTube",
+      "cost": 15,
+      "lastUsed": "Feb 15",
+      "emotionalValue": 5
+    },
+    {
+      "name": "YouTube Music",
+      "cost": 10,
+      "lastUsed": "Feb 2",
+      "emotionalValue": 2
+    },
+    {
+      "name": "Netflix",
+      "cost": 15,
+      "lastUsed": "Mar 3",
+      "emotionalValue": 8
+    },
+    {   
+      "name": "Disney+",
+      "cost": 11,
+      "lastUsed": "Feb 20",
+      "emotionalValue": 6
+    }
+  ]
+}

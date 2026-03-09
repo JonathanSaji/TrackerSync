@@ -1,0 +1,36 @@
+name: Open AI Build Check
+
+on:
+  push:
+    branches: [ main, feature/backend ]
+  pull_request:
+    branches: [ main, feature/backend ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check server starts
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          timeout 5 node server.js || exit_code=$?
+          if [ "$exit_code" = "124" ]; then
+            echo "✅ Server started successfully (timed out as expected)"
+          else
+            echo "❌ Server failed to start"
+            exit 1
+          fi
