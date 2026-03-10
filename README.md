@@ -62,7 +62,7 @@ OPENAI_API_KEY=sk-your-openai-key-here
 node server.js
 ```
 
-The app will be running at **http://localhost:5001**
+The app will be running at **http://localhost:3000**
 
 ---
 
