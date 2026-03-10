@@ -57,10 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
             document.body.classList.add("auth-locked");
             if (loginOverlay) loginOverlay.style.display = "flex";
             if (currentUserLabel) currentUserLabel.textContent = "Not signed in";
+            hideHeader(); // Hide header when not authenticated
         } else {
             document.body.classList.remove("auth-locked");
             if (loginOverlay) loginOverlay.style.display = "none";
             if (currentUserLabel) currentUserLabel.textContent = `Signed in as ${currentUser}`;
+            showHeader(); // Show header when authenticated
         }
     };
 
@@ -102,6 +104,16 @@ let subscriptions = [
     { id: 2, name: 'Spotify', amount: 10.99, date: '2026-03-12', subscriptionType: 'Entertainment', color: 'rgba(30,215,96,0.15)' },
     { id: 3, name: 'ChatGPT Plus', amount: 26.99, date: '2026-03-05', subscriptionType: 'Productivity', color: 'rgba(255,215,0,0.12)' }
 ];
+
+function showHeader(){
+  const header = document.querySelector('header');
+  header.classList.remove('hidden');
+}
+function hideHeader(){
+  const header = document.querySelector('header');
+  header.classList.add('hidden');
+
+}
 
 function switchPage(pageId, clickedButton) {
   // Hide all the pages
