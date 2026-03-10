@@ -26,7 +26,7 @@
 
       <div class="nav-center">
         <!-- href links to a id of an element -->
-        <a href="#dashboard" class="nav-link" onclick="switchPage('dashboard', this)">Dashboard</a>
+        <a href="#dashboard-list" class="nav-link" onclick="switchPage('dashboard', this)">Dashboard</a>
         <a href="#insights" class="nav-link" onclick="switchPage('insights', this)">Insights</a>
         <a href="#ai-advisor" class="nav-link" onclick="switchPage('ai-advisor', this)">AI Advisor</a>
       </div>
@@ -43,36 +43,11 @@
   <div id="dashboard" class="app-page"> <!-- MAIN CONTENT FOR Dashboard Page -->
     <section class="intro-section">
       <div class="intro-text">
-        <h1>Your <span> Solution </span> to Lost Subscriptions. </h1>
+        <h1>Your <span> Solution </span> to Lost Subscriptions</h1>
 
         <div class="intro-buttons">
           <button class="btn" id="addBtn">+ Add Subscription</button>
-          <a href="#dashboard" class="btn btn-outline">View Dashboard</a>
-        </div>
-      </div>
-
-      <div class="dashboard-summary"> <!-- Left side frame of intro section-->
-        <div class="data-preview">  <!-- Panel within the frame -->
-          <div class="preview-card">
-              <span class="preview-title">Monthly Spending</span>
-              <span id="monthlySpending" class="preview-total">Monthly Spending</span>
-          </div>
-
-          <div clas="data-list">  
-            <!-- Preview list of subscriptions and their costs -->
-              <div class="data-item">
-                  <span class="data-name">Netflix</span>
-                  <span class="data-amount">**INSERT VARIABLES / Polish</span>
-              </div>
-              <div class="data-item">
-                  <span class="data-name">Spotify</span>
-                  <span class="data-amount">**INSERT VARIABLES</span>
-              </div>
-              <div class="data-item">
-                  <span class="data-name">Amazon Prime</span>
-                  <span class="data-amount">**INSERT VARIABLE</span>
-              </div>
-          </div> 
+          <a href="#dashboard-list" class="btn btn-outline">View Dashboard</a>
         </div>
       </div>
     </section>
@@ -124,6 +99,32 @@
 
 <div id="insights" class="app-page hidden"> <!-- MAIN CONTENT FOR INSIGHTS PAGE -->
   <section class="insights-section">
+
+    <div class="dashboard-summary"> <!-- Left side frame of intro section-->
+        <div class="data-preview">  <!-- Panel within the frame -->
+          <div class="preview-card">
+              <span class="preview-title">Monthly Spending</span>
+              <span id="monthlySpending" class="preview-total">Monthly Spending</span>
+          </div>
+
+          <div clas="data-list">  
+            <!-- Preview list of subscriptions and their costs -->
+              <div class="data-item">
+                  <span class="data-name">Netflix</span>
+                  <span class="data-amount">**INSERT VARIABLES / Polish</span>
+              </div>
+              <div class="data-item">
+                  <span class="data-name">Spotify</span>
+                  <span class="data-amount">**INSERT VARIABLES</span>
+              </div>
+              <div class="data-item">
+                  <span class="data-name">Amazon Prime</span>
+                  <span class="data-amount">**INSERT VARIABLE</span>
+              </div>
+          </div> 
+        </div>
+      </div>
+
     <span class="section-label">Insights</span>
     <h2 class="section-title">Your Spending Habits</h2>
     <p class="section-sub">Data-driven insights to help you save money and optimize your subscriptions.</p>

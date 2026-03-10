@@ -9,7 +9,7 @@
 :root {
     --bg-main: #000000;
     --bg-card: #121212;
-    --accentColour: #ffc425;
+    --accentColour: #ffd700;
     --accentColour-soft: rgba(255, 215, 0, 0.15);
     --text-main: #ffffff;
     --text-muted: #b3b3b3;
@@ -127,26 +127,29 @@ body {
 .intro-section {
   max-width: 1160px;
   margin: 0 auto;
-  padding: 100px 28px 80px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  padding: 65px 28px 80px;
+  display: flex;
   gap: 64px;
   align-items: center;
 }
 .intro-text{}
 
 .intro-section h1 {
+
   font-family: 'poppins', sans-serif;
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-size: 88px;
+  text-align: center;
   font-weight: 700;
   line-height: 1.15;
-  margin-bottom: 20px;
+  padding-left: 0px;
+  margin-bottom: 40px;
   letter-spacing: -0.02em;
 }
 .intro-section h1 span { color: var(--accentColour); }
 
 .intro-buttons {
   display: flex;
+  justify-content: center;
   gap: 20px;
   flex-wrap: wrap;
 }
