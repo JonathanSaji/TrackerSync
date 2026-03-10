@@ -1,125 +1,119 @@
-# Git Feature Branch Workflow
+# SubSync
 
-> **Rule #1:** Never commit directly to `main`. Always create a feature branch first.
-
----
-
-## Downloads/Extension
-
-> Live Server by Ritwick Dey
-
-
-
-
-## Why Use Feature Branches?
-
-- Keeps `main` stable and deployable at all times
-- Lets multiple people work on different features simultaneously
-- Makes code reviews easier via pull requests
-- Easy to discard a bad idea without affecting the rest of the codebase
+> A subscription tracking app that helps you manage recurring payments and get AI-powered financial advice.
 
 ---
 
-## How to Create a Feature Branch
+## Prerequisites
 
-### 1. Make sure you're on `main` and up to date
+Make sure you have the following installed before running the app:
+
+- **[Node.js](https://nodejs.org/)** (v18 or higher recommended)
+  - Verify with: `node --version`
+- **[Git](https://git-scm.com/)** (to clone the repo)
+  - Verify with: `git --version`
+- A code editor like **[VS Code](https://code.visualstudio.com/)** (recommended)
+  - Install the **Live Server** extension by Ritwick Dey for frontend development
+
+---
+
+## Getting Started
+
+### 1. Clone the repository
 
 ```bash
-git checkout main
-git pull origin main
+git clone https://github.com/YOUR_USERNAME/ProjectBeta-ICS4U.git
+cd ProjectBeta-ICS4U
 ```
 
-### 2. Create and switch to a new feature branch
+### 2. Install node.js
+
+**https://nodejs.org/en**
+>Use to download node.js
+>After that check node.js version (to make sure you have it)
+```bash
+node -v
+```
+
+### 3. Install dependencies
 
 ```bash
+npm install
+```
+
+> If you get a PowerShell execution policy error on Windows, run this first:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+
+### 4. Set up your environment variables
+
+Create or dropin in `.env` file in the root of the project:
+
+```
+OPENAI_API_KEY=sk-your-openai-key-here
+```
+
+> ⚠️ Never commit your `.env` file. It is already listed in `.gitignore`.
+
+### 5. Start the server
+
+```bash
+node server.js
+```
+
+The app will be running at **http://localhost:5001**
+
+---
+
+## Test Accounts
+
+The app uses simple local authentication. Use one of the test accounts to log in:
+
+| Username | Password |
+|----------|----------|
+| user1    | pass1    |
+| user2    | pass2    |
+
+---
+
+## Testing the AI
+
+To test the OpenAI integration directly without starting the full server:
+
+```bash
+node openai-test.js
+```
+
+Make sure your `.env` file is set up with a valid `OPENAI_API_KEY` first.
+
+---
+
+## Branch Workflow
+
+> **Never commit directly to `main`.** Always use a feature branch.
+
+```bash
+# Create a new branch
 git checkout -b feature/your-feature-name
-```
 
-Or using the newer syntax:
-
-```bash
-git switch -c feature/your-feature-name
-```
-
-### 3. Do your work and commit to the branch
-
-```bash
-# Make your changes, then:
+# Make changes, then commit
 git add .
 git commit -m "feat: describe what you did"
-```
 
-### 4. Push your branch to remote
-
-```bash
+# Push and open a Pull Request on GitHub
 git push origin feature/your-feature-name
 ```
 
-### 5. Open a Pull Request (PR)
-
-Go to GitHub/GitLab and open a PR from your feature branch into `main`. Get it reviewed, then merge.
-This makes it so that we can all approve on what the code does so we can all understand and move together
-
-### 6. Clean up after merging
-
-```bash
-# Switch back to main
-git checkout main
-git pull origin main
-
-# Delete the local branch
-git branch -d feature/your-feature-name
-
-# Delete the remote branch
-git push origin --delete feature/your-feature-name
-```
+See the full Git workflow guide in the project wiki or ask a team member.
 
 ---
 
-## Branch Naming Conventions
+## Dependencies
 
-| Type       | Example                        |
-|------------|--------------------------------|
-| Feature    | `feature/user-authentication`  |
-| Bug fix    | `fix/login-crash`              |
-| Hotfix     | `hotfix/payment-null-error`    |
-| Chore      | `chore/update-dependencies`    |
-| Release    | `release/v1.2.0`               |
-
----
-
-## Quick Reference Cheat Sheet
-
-```bash
-# Create branch
-git checkout -b feature/my-feature
-
-# Check which branch you're on
-git branch
-
-# Switch between branches
-git checkout branch-name
-
-# See all branches (local + remote)
-git branch -a
-
-# Merge main into your branch (to stay up to date)
-git merge main
-```
-
----
-
-## Good Commit Message Format
-
-```
-type: short description (50 chars max)
-
-Optional longer explanation if needed.
-```
-
-**Types:** `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `test`
-
-**Examples:**
-- `feat: add login with Google OAuth`
-- `fix: resolve null pointer on checkout`
-- `docs: update README with setup instructions`
+| Package  | Purpose                        |
+|----------|-------------------------------|
+| express  | Backend web server             |
+| cors     | Cross-origin request handling  |
+| dotenv   | Load environment variables     |
+| openai   | OpenAI API client              |
