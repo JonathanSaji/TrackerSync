@@ -1,3 +1,8 @@
+// Skip running on the SubTrackr app itself
+if (window.location.origin === "http://localhost:3000") {
+  throw new Error("SubTrackr: skipping own app page");
+}
+
 let hasShownSubtrackrPopup = false;
 
 const KNOWN_SUBSCRIPTION_DOMAINS = [
@@ -172,13 +177,6 @@ if (document.readyState === "complete" || document.readyState === "interactive")
   });
 }
 
-
-//So that if the app opens up the extension does not open
-const origin = window.location.origin;
-  if (origin === "http://127.0.0.1:3000" || origin === "http://localhost:3000") {
-    return;
-  }
-
 (function patchHistoryForSpaSupport() {
   const origPushState = history.pushState;
   const origReplaceState = history.replaceState;
@@ -202,4 +200,3 @@ const origin = window.location.origin;
 
   window.addEventListener("popstate", handleUrlChange);
 })();
-
