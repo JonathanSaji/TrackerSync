@@ -196,3 +196,40 @@ function deleteSub(id) {
 
 // Initial render for the tracker
 renderSubscriptions();
+
+function renderPieChart() {
+  const ctx = document.getElementById('categoryChart');
+  
+  // If the canvas doesn't exist yet, stop the function
+  if (!ctx) return;
+
+  new Chart(ctx, {
+    type: 'doughnut', // 'pie' works too, but 'doughnut' looks more modern!
+    data: {
+      labels: ['Entertainment', 'Productivity', 'Utilities'],
+      datasets: [{
+        data: [45, 30, 120], // The actual dollar amounts
+        backgroundColor: [
+          '#FFD700', // Your yellow accent
+          '#4ade80', // Green
+          '#a1a1aa'  // Grey
+        ],
+        borderWidth: 0, // Removes the ugly white borders for dark mode
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      color: '#ffffff', // Makes the text white
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+}
+
+// Call this function when the page loads
+document.addEventListener("DOMContentLoaded", () => {
+    renderPieChart();
+});
