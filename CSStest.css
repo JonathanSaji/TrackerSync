@@ -616,6 +616,12 @@ body.auth-locked .nav-wrapper {
   margin-right: 8px;
 }
 
-
+/*================= For Each Grou ===================*/
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 20px;
+}
 
    
