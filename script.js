@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // 2. SUBSCRIPTION FORM SUBMIT
     // ==========================================
-    document.getElementById("subForm")?.addEventListener("submit", (e) => {
+    document.getElementById("subForm")?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name     = document.getElementById("subName").value.trim();
         const amount   = parseFloat(document.getElementById("subAmount").value);
@@ -88,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        //made by ai
         const CATEGORY_COLORS = {
             Entertainment: 'rgba(229,9,20,0.15)',
             Productivity:  'rgba(255,215,0,0.12)',
@@ -106,6 +107,12 @@ document.addEventListener("DOMContentLoaded", () => {
             isTrial:          false
         };
 
+        const ok = await saveSubscription(newSub);
+        if (!ok) {
+            errorEl.textContent = "Failed to save. Is the server running?";
+            return;
+        }
+
         subscriptions.push(newSub);
         renderSubscriptions();
         updateMonthlySpending();
@@ -115,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // 3. FREE TRIAL FORM SUBMIT
     // ==========================================
-    document.getElementById("trialForm")?.addEventListener("submit", (e) => {
+    document.getElementById("trialForm")?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name     = document.getElementById("trialName").value.trim();
         const endDate  = document.getElementById("trialEndDate").value;
@@ -137,6 +144,12 @@ document.addEventListener("DOMContentLoaded", () => {
             color:            'rgba(96,165,250,0.12)',
             isTrial:          true
         };
+
+        const ok = await saveSubscription(newTrial);
+        if (!ok) {
+            errorEl.textContent = "Failed to save. Is the server running?";
+            return;
+        }
 
         subscriptions.push(newTrial);
         renderSubscriptions();
@@ -197,18 +210,52 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    renderSubscriptions();
-    updateMonthlySpending();
+    loadSubscriptions();
 });
 
 // ==========================================
 // SUBSCRIPTION DATA
 // ==========================================
-let subscriptions = [
-    { id: 1, name: 'Netflix',      amount: 22.99, date: '2026-03-07', subscriptionType: 'Entertainment', color: 'rgba(229,9,20,0.15)',   isTrial: false },
-    { id: 2, name: 'Spotify',      amount: 10.99, date: '2026-03-12', subscriptionType: 'Entertainment', color: 'rgba(30,215,96,0.15)',   isTrial: false },
-    { id: 3, name: 'ChatGPT Plus', amount: 26.99, date: '2026-03-05', subscriptionType: 'Productivity',  color: 'rgba(255,215,0,0.12)',   isTrial: false }
-];
+let subscriptions = [];
+
+// ==========================================
+// API FUNCTIONS
+// ==========================================
+async function loadSubscriptions() {
+    try {
+        const res = await fetch('/api/subscriptions');
+        subscriptions = await res.json();
+    } catch (err) {
+        console.warn('Could not load from server:', err);
+        subscriptions = [];
+    }
+    renderSubscriptions();
+    updateMonthlySpending();
+}
+
+async function saveSubscription(sub) {
+    try {
+        const res = await fetch('/api/subscriptions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sub)
+        });
+        return res.ok;
+    } catch (err) {
+        console.error('Failed to save:', err);
+        return false;
+    }
+}
+
+async function deleteSubscription(id) {
+    try {
+        const res = await fetch(`/api/subscriptions/${id}`, { method: 'DELETE' });
+        return res.ok;
+    } catch (err) {
+        console.error('Failed to delete:', err);
+        return false;
+    }
+}
 
 // ==========================================
 // HELPERS
@@ -246,11 +293,14 @@ function renderSubscriptions() {
     container.innerHTML = '';
 
     subscriptions.forEach(sub => {
+        //simple math to calculate the amount od days remaining
         const daysRemaining = Math.ceil((new Date(sub.date) - new Date()) / (1000 * 60 * 60 * 24));
 
         let statusClass = 'status-ok';
         let statusText  = 'Active';
 
+
+        //code for when trial/sub status
         if (sub.isTrial) {
             if (daysRemaining < 0)      { statusClass = 'status-cancel'; statusText = 'Expired'; }
             else if (daysRemaining <= 5) { statusClass = 'status-soon';   statusText = 'Ends Soon'; }
@@ -261,6 +311,7 @@ function renderSubscriptions() {
         }
 
         const ICONS = { Entertainment: '🎬', Productivity: '📚', Utilities: '💡', Business: '💼' };
+        //checking which button was clicked
         sub.icon = ICONS[sub.subscriptionType] || (sub.isTrial ? '⏳' : '❓');
 
         const trialBadge = sub.isTrial
@@ -293,37 +344,44 @@ function renderSubscriptions() {
     });
 }
 
-function deleteSub(id) {
+async function deleteSub(id) {
     if (confirm("Remove this subscription?")) {
+        const ok = await deleteSubscription(id);
+        if (!ok) {
+            alert("Failed to delete. Is the server running?");
+            return;
+        }
         subscriptions = subscriptions.filter(s => s.id !== id);
         renderSubscriptions();
         updateMonthlySpending();
     }
 }
 
-renderSubscriptions();
+
 
 // ==========================================
 // PIE CHART
 // ==========================================
-function renderPieChart() {
-    const ctx = document.getElementById('categoryChart');
-    if (!ctx) return;
 
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Entertainment', 'Productivity', 'Utilities'],
-            datasets: [{
-                data: [45, 30, 120],
-                backgroundColor: ['#FFD700', '#4ade80', '#a1a1aa'],
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            color: '#ffffff',
-            plugins: { legend: { position: 'bottom' } }
-        }
-    });
-}
+//ai did this i dont know how it works pls understand this
+// function renderPieChart() {
+//     const ctx = document.getElementById('categoryChart');
+//     if (!ctx) return;
+
+//     new Chart(ctx, {
+//         type: 'doughnut',
+//         data: {
+//             labels: ['Entertainment', 'Productivity', 'Utilities'],
+//             datasets: [{
+//                 data: [45, 30, 120],
+//                 backgroundColor: ['#FFD700', '#4ade80', '#a1a1aa'],
+//                 borderWidth: 0,
+//                 hoverOffset: 4
+//             }]
+//         },
+//         options: {
+//             color: '#ffffff',
+//             plugins: { legend: { position: 'bottom' } }
+//         }
+//     });
+// }

@@ -52,14 +52,23 @@ app.get('/api/subscriptions', (req, res) => {
   res.json(subscriptions);
 });
 
-// Add a subscription (expects JSON { name, cost, category, nextRenewal })
+// Add a subscription (saves the full object)
 app.post('/api/subscriptions', (req, res) => {
-  const { name, cost, category, nextRenewal } = req.body;
-  if (!name) return res.status(400).json({ error: 'name required' });
-  const row = [name, cost ?? null, category ?? null, nextRenewal ?? null];
-  subscriptions.push(row);
+  const sub = req.body;
+  if (!sub.name) return res.status(400).json({ error: 'name required' });
+  subscriptions.push(sub);
   persist();
-  res.status(201).json(row);
+  res.status(201).json(sub);
+});
+
+// Delete a subscription by id
+app.delete('/api/subscriptions/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const before = subscriptions.length;
+  subscriptions = subscriptions.filter(s => s.id !== id);
+  if (subscriptions.length === before) return res.status(404).json({ error: 'not found' });
+  persist();
+  res.json({ ok: true });
 });
 
 const PORT = process.env.PORT || 3000;
