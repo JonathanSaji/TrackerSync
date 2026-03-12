@@ -624,4 +624,118 @@ body.auth-locked .nav-wrapper {
   margin-bottom: 20px;
 }
 
-   
+/* ================= AI ADVISOR CHAT ================= */
+
+.advisor-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.advisor-section {
+  max-width: 900px;
+  margin: 0 auto;         /* centers horizontally */
+  text-align: center;      /* centers text inside */
+  padding: 60px 20px;      /* optional spacing */
+}
+
+.ai-chatbox {
+  display: flex;
+  flex-direction: column;
+  height: 520px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+/* Messages area */
+
+.ai-chat-messages {
+  text-align: left;
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Message bubbles */
+
+.ai-message {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.ai-message.ai {
+  background: rgba(255,215,0,0.08);
+  border: 1px solid rgba(255,215,0,0.2);
+  align-self: flex-start;
+}
+
+.ai-message.user {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  align-self: flex-end;
+}
+
+/* Input area */
+
+.ai-chat-input {
+  display: flex;
+  border-top: 1px solid var(--border);
+  padding: 12px;
+  gap: 10px;
+}
+
+.ai-chat-input input {
+  flex: 1;
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.ai-chat-input input:focus {
+  outline: none;
+  border-color: var(--accentColour);
+}
+
+.ai-chat-input button {
+  background: var(--accentColour);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.ai-chat-input button:hover {
+  transform: translateY(-1px);
+}
+
+/* Optional: animated dots typing indicator */
+.ai-typing {
+  display: inline-block;
+  width: 50px;
+  text-align: left;
+}
+
+.ai-typing::after {
+  content: '...';
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 20%, 50%, 80%, 100% { opacity: 1; }
+  40%, 60%, 80% { opacity: 0; }
+}
+
+

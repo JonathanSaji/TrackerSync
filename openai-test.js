@@ -1,4 +1,4 @@
-require("dotenv").config();
+//require("dotenv").config();
 require("dotenv").config({ quiet: true }); // Load .env without warning if it doesn't exist, quieter in terminal
 
 const OpenAI = require("openai");

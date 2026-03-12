@@ -160,7 +160,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // 4. LOGIN LOGIC
     // ==========================================
-    const VALID_USERS = { user1: "pass1", user2: "pass2" };
+    
+    //const VALID_USERS = { user1: "pass1", user2: "pass2" }; //replace with .env values for security
+    
+
     let currentUser = null;
 
     const loginOverlay    = document.getElementById("loginOverlay");
@@ -195,19 +198,96 @@ document.addEventListener("DOMContentLoaded", () => {
         updateAuthUi();
     });
 
-    loginForm?.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const username = loginUsername?.value.trim();
-        const password = loginPassword?.value;
-        if (!username || !password) return;
+    loginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = loginUsername?.value.trim();
+    const password = loginPassword?.value;
+    if (!username || !password) return;
 
-        if (VALID_USERS[username] && VALID_USERS[username] === password) {
-            currentUser = username;
-            if (loginError) loginError.textContent = "";
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            currentUser = data.user;
+            loginError.textContent = '';
             updateAuthUi();
         } else {
-            if (loginError) loginError.textContent = "Invalid username or password.";
+            loginError.textContent = 'Invalid username or password.';
         }
+        } catch (err) {
+        console.error(err);
+        loginError.textContent = 'Error connecting to server.';
+    }
+    });
+
+    // ==========================================
+    // AI ADVISOR CHAT FUNCTIONS & LISTENERS
+    // ==========================================
+    const aiInput = document.getElementById("aiChatInput");
+    const aiSendBtn = document.getElementById("aiSendBtn");
+    const aiMessages = document.getElementById("aiChatMessages");
+
+    function typeMessage(message, container, speed = 15) {
+        container.textContent = ''; // clear bubble
+        let i = 0;
+        const interval = setInterval(() => {
+            container.textContent += message[i];
+            i++;
+            if (i >= message.length) {
+                clearInterval(interval);
+            }
+        }, speed);
+    }
+
+    function addMessage(text, sender) {
+        if (!aiMessages) return;
+        const msg = document.createElement("div");
+        msg.className = `ai-message ${sender}`;
+        msg.textContent = text;
+        aiMessages.appendChild(msg);
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+    }
+
+    function sendChat() {
+        const text = aiInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, "user");
+        aiInput.value = "";
+
+        // Call your server AI endpoint
+        fetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: text })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.answer) {
+                const msg = document.createElement("div");
+                msg.className = "ai-message ai";
+                aiMessages.appendChild(msg);
+                typeMessage(data.answer, msg, 15);
+            } else {
+                const msg = document.createElement("div");
+                msg.className = "ai-message ai";
+                aiMessages.appendChild(msg);
+                typeMessage("Error: No response from AI.", msg, 15);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            addMessage("Error contacting AI server.", "ai");
+        });
+    }
+
+    aiSendBtn?.addEventListener("click", sendChat);
+    aiInput?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendChat();
     });
 
     loadSubscriptions();
@@ -230,8 +310,25 @@ async function loadSubscriptions() {
         subscriptions = [];
     }
     renderSubscriptions();
-    updateMonthlySpending();
-}
+    // NOTE: I removed the stray "Add logic" that was crashing the page here.
+    // We will build a proper Add Form handler for the tracker below!
+
+      if (window.location.hash === '#ai-advisor') {
+    // Replace this with your actual function that shows the AI chatbox
+    if (typeof openAiAdvisor === 'function') {
+      openAiAdvisor();
+    } else {
+      // Fallback: manually show the chatbox element
+      const aiTab = document.getElementById('ai-advisor-tab');
+      const aiContent = document.getElementById('ai-advisor-content');
+      if (aiTab) aiTab.classList.add('active'); // or whatever your tab uses
+      if (aiContent) aiContent.style.display = 'block'; // or your show method
+    }
+  }
+
+}//);
+    //updateMonthlySpending();
+//}
 
 async function saveSubscription(sub) {
     try {
@@ -368,20 +465,30 @@ async function deleteSub(id) {
 //     const ctx = document.getElementById('categoryChart');
 //     if (!ctx) return;
 
-//     new Chart(ctx, {
-//         type: 'doughnut',
-//         data: {
-//             labels: ['Entertainment', 'Productivity', 'Utilities'],
-//             datasets: [{
-//                 data: [45, 30, 120],
-//                 backgroundColor: ['#FFD700', '#4ade80', '#a1a1aa'],
-//                 borderWidth: 0,
-//                 hoverOffset: 4
-//             }]
-//         },
-//         options: {
-//             color: '#ffffff',
-//             plugins: { legend: { position: 'bottom' } }
-//         }
-//     });
-// }
+  new Chart(ctx, {
+    type: 'doughnut', // 'pie' works too, but 'doughnut' looks more modern!
+    data: {
+      labels: ['Entertainment', 'Productivity', 'Utilities'],
+      datasets: [{
+        data: [45, 30, 120], // The actual dollar amounts
+        backgroundColor: [
+          '#FFD700', // Your yellow accent
+          '#4ade80', // Green
+          '#a1a1aa'  // Grey
+        ],
+        borderWidth: 0, // Removes the ugly white borders for dark mode
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      color: '#ffffff', // Makes the text white
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+//}
+
+

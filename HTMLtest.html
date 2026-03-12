@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="CSStest.css">
-<script src="script.js"></script>
+<!-- <script src="script.js"></script> moved to bottom --> 
 
 </head>
 <body>
@@ -139,17 +139,32 @@
 <div id="ai-advisor" class="app-page hidden"> <!-- MAIN CONTENT FOR AI ADVISOR PAGE -->
   <section class="advisor-section">
     <span class="section-label">AI Advisor</span>
-    <h2 class="section-title">Personalized Subscription Advice</h2>
-    <p class="section-sub">Get tailored recommendations to optimize your subscriptions and save money.</p>
+    <h2 class="section-title">Your AI Subscription Assistant</h2>
+    <p class="section-sub">Let AI analyze your subscriptions, guide you on what to keep or cancel, and answer any questions you have about your services</p>
 
     <div class="advisor-content">
-      <div id="recommendations" class="recommendations-placeholder">[AI Recommendations]</div>
+
+      <div class="ai-chatbox">
+
+        <div class="ai-chat-messages" id="aiChatMessages">
+          <div class="ai-message ai">
+              Hello. I’m your SubSync advisor. Ask me anything about your subscriptions.
+          </div>
+        </div>
+
+        <div class="ai-chat-input">
+          <input type="text" id="aiChatInput" placeholder="Ask about your subscriptions..." />
+          <button id="aiSendBtn">Send</button>
+      </div>
+
     </div>
+
+</div>
   </section>
 </div>
 
   <footer class="app-footer">
-    <p>SubSync keeps your renewals visible so surprises don’t hit your balance.</p>
+    <p>SubSync keeps your renewals visible so surprises don’t hit your balance, and with AI-powered insights, you’ll always know what to keep and what to cancel.</p>
   </footer>
 
 
@@ -303,5 +318,6 @@
     </div>
   </div>
 
+<script src="script.js"></script>
 </body>
 </html>
