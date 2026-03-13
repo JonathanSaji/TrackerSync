@@ -329,7 +329,7 @@ async function loadSubscriptions() {
     }
   }
 
-}//);
+//}//);
     //updateMonthlySpending();
 //}
 
