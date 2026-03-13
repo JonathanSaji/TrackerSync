@@ -9,6 +9,6 @@ if not exist "%SHORTCUT%" (
     echo Shortcut created on Desktop!
 )
 
-start node server.js
+start npm start
 timeout /t 2
 start http://localhost:3000
