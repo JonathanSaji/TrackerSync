@@ -96,7 +96,7 @@ app.delete('/api/subscriptions/:id', (req, res) => {
   subscriptions = subscriptions.filter(s => s.id !== id);
   if (subscriptions.length === before) return res.status(404).json({ error: 'not found' });
   persist();
-  res.status(201).json(row);
+
   res.json({ ok: true });
 });
 
