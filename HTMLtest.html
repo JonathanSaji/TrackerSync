@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="CSStest.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="script.js"></script>
 
 </head>
@@ -58,23 +59,23 @@
       <div class="cards-grid">
         <div class="stat-card">
           <div class="stat-label">Monthly Total</div>
-          <div id="monthlySpending" class="stat-value accent">Monthly Spending</div>
-          <div class="stat-sub">Across 6 services</div>
+          <div id="monthlySpending" class="stat-value accent" style="color:#ffd700">Monthly Spending</div>
+          <div id="subscriptionCount" class="stat-sub">Across x services</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Annual Estimate</div>
-          <div class="stat-value">,019</div>
-          <div class="stat-sub">+12% from last year</div>
+          <div class="stat-label">Top Category</div>
+          <div id="topCategorySub" class="stat-value" style="color:#4ade80">x</div>
+          <div id="topCategoryValue" class="stat-sub">x</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Most Expensive Service</div>
+          <div id="mostExpensive" class="stat-value">None</div>
+          <div id="mostExpensiveSub" class="stat-sub">+None</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Renewing Soon</div>
-          <div class="stat-value" style="color:#ffd700">2</div>
+          <div id="renewingSoon" class="stat-value" style="color:#ffd700">x</div>
           <div class="stat-sub">Within 7 days</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">TBD</div>
-          <div class="stat-value" style="color:#4ade80">8</div>
-          <div class="stat-sub">TBD</div>
         </div>
       </div>
 
@@ -84,7 +85,7 @@
           <div>Service</div>
           <div>Amount</div>
           <div>Category</div>
-          <div>Next Renewal</div>
+          <div>Days Remaining</div>
           <div>Status</div>
           <div>Action</div> 
       </div>
@@ -100,38 +101,31 @@
     <p class="section-sub">Data-driven insights to help you save money and optimize your subscriptions.</p>
 
     <div class="insights-one">
-      <div class="dashboard-summary"> <!-- Left side frame of intro section-->
-          <div class="data-preview">  <!-- Panel within the frame -->
-            <div class="preview-card">
-                <span class="preview-title">Monthly Spending</span>
-                <span id="monthlySpending" class="preview-total">Monthly Spending</span>
-            </div>
-
-
-            <div class="data-list">  
-              <!-- Preview list of subscriptions and their costs -->
-                <div class="data-item">
-                    <span class="data-name">Netflix</span>
-                    <span class="data-amount">**INSERT VARIABLES / Polish</span>
-                </div>
-                <div class="data-item">
-                    <span class="data-name">Spotify</span>
-                    <span class="data-amount">**INSERT VARIABLES</span>
-                </div>
-                <div class="data-item">
-                    <span class="data-name">Amazon Prime</span>
-                    <span class="data-amount">**INSERT VARIABLE</span>
-                </div>
-            </div> 
+      <div class="insights-bars">
+        <div class="service-spend-card">
+          <div class="service-spend-header">
+            <span class="service-spend-title">Monthly Spend by Service</span>
           </div>
-      </div>
-
-      <div class="pi-chart">
-        <h2>Spend by Category</h2>
-        <div style="width: 300px; height: 300px; margin: 0 auto;">
-          <canvas id="categoryChart"></canvas>
+          <div id="serviceSpendList" class="service-spend-list">
+            <!-- Filled dynamically from subscriptions -->
+          </div>
         </div>
       </div>
+      <div class="pi-chart">
+        <div class="category-card">
+          <div class="category-card-header">
+            <span class="category-card-title">Spend by Category</span>
+          </div>
+          <div class="category-chart-container">
+            <canvas id="categoryChart"></canvas>
+            <div class ="category-chart-subtitle">Monthly:</div>
+            <div id="categoryChartCenter" class="category-chart-center">$0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="insights-two">
+    
     </div>
   </section>
 </div>

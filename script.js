@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         subscriptions.push(newSub);
         renderSubscriptions();
-        updateMonthlySpending();
+        updateAllStats();
         closeSubForm();
     });
 
@@ -153,12 +153,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         subscriptions.push(newTrial);
         renderSubscriptions();
-        updateMonthlySpending();
+        updateAllStats();
         closeTrialForm();
     });
 
     // ==========================================
-    // 4. LOGIN LOGIC
+    // LOGIN LOGIC
     // ==========================================
     
     //const VALID_USERS = { user1: "pass1", user2: "pass2" }; //replace with .env values for security
@@ -215,6 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
             currentUser = data.user;
             loginError.textContent = '';
             updateAuthUi();
+            loadSubscriptionsFromServer();
         } else {
             loginError.textContent = 'Invalid username or password.';
         }
@@ -310,6 +311,8 @@ async function loadSubscriptions() {
         subscriptions = [];
     }
     renderSubscriptions();
+    updateAllStats();
+}
     // NOTE: I removed the stray "Add logic" that was crashing the page here.
     // We will build a proper Add Form handler for the tracker below!
 
@@ -371,14 +374,81 @@ function switchPage(pageId, clickedButton) {
     clickedButton?.classList.add('active');
 }
 
-function updateMonthlySpending() {
+function updateAllStats(){
     const total = subscriptions
         .filter(s => !s.isTrial)
         .reduce((sum, s) => sum + s.amount, 0);
     document.querySelectorAll('#monthlySpending').forEach(el => {
         el.textContent = `$${total.toFixed(2)}`;
     });
+
+    const count = subscriptions.length;
+    document.querySelectorAll('#subscriptionCount').forEach(el => {
+        el.textContent = `Across ${count} services`;
+    });
+
+    // Calculate renewing soon (within 7 days, not overdue)
+    const renewingSoonCount = subscriptions.filter(sub => {
+        const daysRemaining = Math.ceil((new Date(sub.date) - new Date()) / (1000 * 60 * 60 * 24));
+        return daysRemaining >= 0 && daysRemaining <= 7;
+    }).length;
+    document.querySelectorAll('#renewingSoon').forEach(el => {
+        el.textContent = renewingSoonCount;
+    });
+
+
+
+    // Find most expensive subscription (non-trial)
+    const mostExpensive = subscriptions
+        .filter(s => !s.isTrial)
+        .reduce((max, s) => s.amount > max.amount ? s : max, { amount: 0, name: 'None' });
+    document.querySelectorAll('#mostExpensive').forEach(el => {
+        el.textContent = mostExpensive.name === 'None' ? 'None' : `$${mostExpensive.amount.toFixed(2)}`;
+    });
+    document.querySelectorAll('#mostExpensiveSub').forEach(el => {
+        el.textContent = mostExpensive.name === 'None' ? 'None' : `${mostExpensive.name}`;
+    });
+
+    // Calculate total amount per subscription type (non-trial)
+    const categoryTotals = subscriptions
+        .filter(s => !s.isTrial)
+        .reduce((acc, s) => {
+            const type = s.subscriptionType || 'Other';
+            acc[type] = (acc[type] || 0) + s.amount;
+            return acc;
+        }, {});
+
+    // Calculate number of subscriptions per type (non-trial)
+    const categoryCounts = subscriptions
+        .filter(s => !s.isTrial)
+        .reduce((acc, s) => {
+            const type = s.subscriptionType || 'Other';
+            acc[type] = (acc[type] || 0) + 1;  // Count subscriptions instead of summing amounts
+            return acc;
+        }, {});
+
+    // Find the category with the highest number of subscriptions
+    const topCategory = Object.entries(categoryCounts).reduce((max, [type, count]) => 
+        count > max.count ? { type, count } : max, 
+        { type: 'None', count: 0 }
+    );
+
+    // Update the top category stat (now showing count of subscriptions)
+    document.querySelectorAll('#topCategoryValue').forEach(el => {
+        el.textContent = topCategory.type === 'None' ? 'None' : topCategory.count + " subscriptions";
+    });
+    document.querySelectorAll('#topCategorySub').forEach(el => {
+        el.textContent = topCategory.type === 'None' ? 'None' : topCategory.type;
+    });
+    
+    renderServiceSpendByService();
+    renderPieChart();
 }
+
+function calculateTime(dateString){
+    return Math.ceil((new Date(dateString) - new Date()) / (1000 * 60 * 60 * 24));
+}
+
 
 // ==========================================
 // RENDER TABLE
@@ -391,11 +461,16 @@ function renderSubscriptions() {
 
     subscriptions.forEach(sub => {
         //simple math to calculate the amount od days remaining
-        const daysRemaining = Math.ceil((new Date(sub.date) - new Date()) / (1000 * 60 * 60 * 24));
+        // const daysRemaining = Math.ceil((new Date(sub.date) - new Date()) / (1000 * 60 * 60 * 24));
+        const daysRemaining = calculateTime(sub.date);
+        let daysRemainingDisplay = daysRemaining + " days";
+        if (daysRemaining == 0){
+            daysRemainingDisplay = "Today";
+
+        }
 
         let statusClass = 'status-ok';
         let statusText  = 'Active';
-
 
         //code for when trial/sub status
         if (sub.isTrial) {
@@ -428,7 +503,7 @@ function renderSubscriptions() {
             </div>
             <div>${amountDisplay}</div>
             <div class="row-muted">${sub.subscriptionType || 'Other'}</div>
-            <div class="row-muted">${sub.date}</div>
+            <div class="row-muted">${daysRemainingDisplay}</div>
             <div><span class="tag ${statusClass}">${statusText}</span></div>
             <div>
                 <button onclick="deleteSub(${sub.id})"
@@ -450,45 +525,200 @@ async function deleteSub(id) {
         }
         subscriptions = subscriptions.filter(s => s.id !== id);
         renderSubscriptions();
-        updateMonthlySpending();
+        updateAllStats();
     }
 }
 
-
-
 // ==========================================
-// PIE CHART
+// INSIGHTS: MONTHLY SPEND BY SERVICE
 // ==========================================
 
-//ai did this i dont know how it works pls understand this
-// function renderPieChart() {
-//     const ctx = document.getElementById('categoryChart');
-//     if (!ctx) return;
+function renderServiceSpendByService() {
+    const listEl = document.getElementById('serviceSpendList');
+    if (!listEl) return;
 
-  new Chart(ctx, {
-    type: 'doughnut', // 'pie' works too, but 'doughnut' looks more modern!
-    data: {
-      labels: ['Entertainment', 'Productivity', 'Utilities'],
-      datasets: [{
-        data: [45, 30, 120], // The actual dollar amounts
-        backgroundColor: [
-          '#FFD700', // Your yellow accent
-          '#4ade80', // Green
-          '#a1a1aa'  // Grey
-        ],
-        borderWidth: 0, // Removes the ugly white borders for dark mode
-        hoverOffset: 4
-      }]
-    },
-    options: {
-      color: '#ffffff', // Makes the text white
-      plugins: {
-        legend: {
-          position: 'bottom'
-        }
-      }
+    listEl.innerHTML = '';
+
+    const paidSubs = subscriptions.filter(s => !s.isTrial);
+
+    if (!paidSubs.length) {
+        listEl.innerHTML = '<div class="service-spend-empty">No paid subscriptions yet.</div>';
+        return;
     }
-  });
-//}
 
+    const totalsByName = paidSubs.reduce((acc, sub) => {
+        const key = sub.name || 'Unnamed';
+        acc[key] = (acc[key] || 0) + (sub.amount || 0);
+        return acc;
+    }, {});
 
+    const entries = Object.entries(totalsByName);
+    entries.sort((a, b) => b[1] - a[1]);
+
+    const maxAmount = entries[0] ? entries[0][1] || 1 : 1;
+
+    entries.forEach(([name, amount]) => {
+        const percentage = Math.max(6, (amount / maxAmount) * 100);
+        const row = document.createElement('div');
+        row.className = 'service-spend-row';
+        row.innerHTML = `
+            <div class="service-spend-label">${name}</div>
+            <div class="service-spend-bar">
+                <div class="service-spend-bar-fill" style="width:${percentage}%;"></div>
+            </div>
+            <div class="service-spend-amount">$${amount.toFixed(2)}</div>
+        `;
+        listEl.appendChild(row);
+    });
+}
+
+// ==========================================
+// INSIGHTS: MONTHLY SPEND BY SERVICE
+// ==========================================
+
+function renderServiceSpendByService() {
+    const listEl = document.getElementById('serviceSpendList');
+    const previewEl = document.getElementById('insightsTopServices');
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+    if (previewEl) previewEl.innerHTML = '';
+
+    const paidSubs = subscriptions.filter(s => !s.isTrial);
+
+    if (!paidSubs.length) {
+        listEl.innerHTML = '<div class="service-spend-empty">No paid subscriptions yet.</div>';
+        if (previewEl) {
+            previewEl.innerHTML = '<div class="data-item"><span class="data-name">No services yet</span><span class="data-amount">$0.00</span></div>';
+        }
+        return;
+    }
+
+    const totalsByName = paidSubs.reduce((acc, sub) => {
+        const key = sub.name || 'Unnamed';
+        acc[key] = (acc[key] || 0) + (sub.amount || 0);
+        return acc;
+    }, {});
+
+    const entries = Object.entries(totalsByName);
+    entries.sort((a, b) => b[1] - a[1]);
+
+    const maxAmount = entries[0] ? entries[0][1] || 1 : 1;
+
+    entries.forEach(([name, amount]) => {
+        const percentage = Math.max(6, (amount / maxAmount) * 100);
+        const row = document.createElement('div');
+        row.className = 'service-spend-row';
+        row.innerHTML = `
+            <div class="service-spend-label">${name}</div>
+            <div class="service-spend-bar">
+                <div class="service-spend-bar-fill" style="width:${percentage}%;"></div>
+            </div>
+            <div class="service-spend-amount">$${amount.toFixed(2)}</div>
+        `;
+        listEl.appendChild(row);
+    });
+
+    if (previewEl) {
+        const topPreview = entries.slice(0, 3);
+        topPreview.forEach(([name, amount]) => {
+            const item = document.createElement('div');
+            item.className = 'data-item';
+            item.innerHTML = `
+                <span class="data-name">${name}</span>
+                <span class="data-amount">$${amount.toFixed(2)}</span>
+            `;
+            previewEl.appendChild(item);
+        });
+    }
+}
+
+// ==========================================
+// PIE CHART: SPEND BY CATEGORY
+// ==========================================
+
+let categoryChartInstance = null;
+
+function renderPieChart() {
+    const canvas = document.getElementById('categoryChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const ctx = canvas.getContext('2d');
+
+    const paidSubs = subscriptions.filter(s => !s.isTrial);
+    const categoryTotals = paidSubs.reduce((acc, sub) => {
+        const type = sub.subscriptionType || 'Other';
+        acc[type] = (acc[type] || 0) + (sub.amount || 0);
+        return acc;
+    }, {});
+
+    let labels = Object.keys(categoryTotals);
+    let data = Object.values(categoryTotals);
+
+    if (!labels.length) {
+        labels = ['No data'];
+        data = [1];
+    }
+
+    const COLOR_MAP = {
+        Entertainment: '#e59f3b',
+        Productivity:  '#22c55e',
+        Utilities:     '#38bdf8',
+        Business:      '#a855f7',
+        Other:         '#6b7280'
+    };
+
+    const backgroundColors = labels.map(label => COLOR_MAP[label] || COLOR_MAP.Other);
+
+    if (categoryChartInstance) {
+        categoryChartInstance.data.labels = labels;
+        categoryChartInstance.data.datasets[0].data = data;
+        categoryChartInstance.data.datasets[0].backgroundColor = backgroundColors;
+        categoryChartInstance.update();
+    } else {
+        categoryChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            color: '#e5e7eb',
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            padding: 12
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const v = ctx.parsed;
+                                return ` $${v.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                cutout: '62%'
+            }
+        });
+    }
+
+    const total = paidSubs.reduce((sum, s) => sum + (s.amount || 0), 0);
+
+    const centerEl = document.getElementById('categoryChartCenter');
+    if (centerEl) {
+        centerEl.textContent = `$${total.toFixed(2)}`;
+    }
+}

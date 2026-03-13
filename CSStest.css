@@ -277,88 +277,165 @@ body {
   max-width: 1160px;
   margin: 0 auto;
   padding: 30px 28px 30px;
-  background-color: #38bdf8;
+  background-color: transparent;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   align-items: center;
 }
 
-
-/* Data Preview Section */
-.dashboard-summary {
-  position: relative;
+.insights-bars {
+  align-self: stretch;
 }
-.data-preview{
+
+/* Monthly Spend by Service card (Insights, top-left) */
+.service-spend-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  grid-column: 1;
-  padding: 24px;
-  box-shadow: var(--shadow-card), 0 0 80px rgba(255,215,0,0.04);
-  position: relative;
-  overflow: hidden;
-
+  padding: 22px 22px 20px;
+  box-shadow: var(--shadow-card);
 }
 
-.data-preview::before {
-  content: '';
-  position: absolute;
-  top: -60px; right: -60px;
-  width: 200px; height: 200px;
-  background: radial-gradient(circle, rgba(255,215,0,0.08), transparent 70%);
-  pointer-events: none;
-}
-
-.preview-card {
+.service-spend-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
-.preview-title {
+
+.service-spend-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.service-spend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.service-spend-row {
+  display: grid;
+  grid-template-columns: 1.4fr 4fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.service-spend-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.service-spend-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(55, 65, 81, 0.9);
+  overflow: hidden;
+}
+
+.service-spend-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  border-radius: inherit;
+  background: var(--accentColour);
+  box-shadow: 0 0 16px var(--accent-glow);
+  transition: width 0.3s ease-out;
+}
+
+.service-spend-amount {
   font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.service-spend-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Spend by Category pie card (top-right)*/
+.pi-chart{
+  align-self: stretch;
+}
+
+.category-card { /* The card container for the pie chart */
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 22px 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.category-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.category-card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.category-chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+.category-chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+
+}
+.category-chart-subtitle {
+  position: absolute;
+  top: 95px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
 }
-.preview-total {
-  /* font-family: 'Space Mono', monospace; */
-  font-size: 1.5rem;
+
+.category-chart-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding-bottom: 30px;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--text-main);
+  text-align: center;
 }
 
-.data-list { display: flex; flex-direction: column; gap: 10px; }
-
-.data-item {
-  display: flex;
+/* ================ Insights, bottom section =============== */
+.insights-two{
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 30px 28px 30px;
+  background-color: transparent;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: rgba(255,255,255,0.03);
-  border-radius: var(--radius-lg);
-  transition: var(--trans);
 }
-
-.data-item:hover { background: rgba(255,255,255,0.06); }
-
-.data-icon {
-  width: 34px; height: 34px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-
-.pi-chart{
-  
-}
-
 
 
 /*================Button styling ==================*/
