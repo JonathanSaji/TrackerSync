@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
-    // 1. MODAL LOGIC
+    // MODAL LOGIC
     // ==========================================
     const addModalOverlay = document.getElementById("addModalOverlay");
     const subFormOverlay   = document.getElementById("subFormOverlay");
@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ==========================================
-    // 3. FREE TRIAL FORM SUBMIT
+    // FREE TRIAL FORM SUBMIT
     // ==========================================
     document.getElementById("trialForm")?.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -329,10 +329,6 @@ async function loadSubscriptions() {
     }
   }
 
-//}//);
-    //updateMonthlySpending();
-//}
-
 async function saveSubscription(sub) {
     try {
         const res = await fetch('/api/subscriptions', {
@@ -380,6 +376,10 @@ function updateAllStats(){
         .reduce((sum, s) => sum + s.amount, 0);
     document.querySelectorAll('#monthlySpending').forEach(el => {
         el.textContent = `$${total.toFixed(2)}`;
+    });
+    const yearlySpending = total * 12;
+    document.querySelectorAll('#yearlySpending').forEach(el => {
+        el.textContent = `$${yearlySpending.toFixed(2)}`;
     });
 
     const count = subscriptions.length;

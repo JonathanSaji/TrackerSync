@@ -83,7 +83,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accentColour);
 }
 .nav-left img {
   flex-shrink: 0;
@@ -130,7 +130,7 @@ body {
 .intro-section {
   max-width: 1160px;
   margin: 0 auto;
-  padding: 85px 28px 78px;
+  padding: 140px 28px 110px;
   display: flex;
   gap: 64px;
   align-items: center;
@@ -200,7 +200,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
-  transition: border-color var(--trans), transform var(--trans);
+  transition: border-color var(--transition-med), transform var(--transition-med);
   position: relative;
   overflow: hidden;
 }
@@ -209,7 +209,7 @@ body {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 2px;
-  background: var(--accent);
+  background: var(--accentColour);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.3s ease;
@@ -220,7 +220,7 @@ body {
 
 .stat-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
 .stat-value { font-family: 'Poppins', sans-serif; font-size: 1.7rem; font-weight: 700; color: var(--text-main); line-height: 1; }
-.stat-value.accent { color: var(--accent); }
+.stat-value.accent { color: var(--accentColour); }
 .stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
 /* ============= Subscription Section ==========*/
@@ -252,7 +252,7 @@ body {
   font-size: 0.88rem;
 }
 .table-row:last-child { border-bottom: none; }
-.table-row:hover { background: rgba(255,255,255,0.025); }
+.table-row:hover { background: rgba(255, 255, 255, 0.034); }
 
 
 .sub-list { display: flex; flex-direction: column; gap: 10px; }
@@ -268,7 +268,7 @@ body {
   font-weight: 600;
 }
 .status-ok     { background: rgba(34,197,94,0.15); color: #4ade80; }
-.status-soon   { background: rgba(255,215,0,0.12); color: var(--accent); }
+.status-soon   { background: rgba(255,215,0,0.12); color: var(--accentColour); }
 .status-cancel { background: rgba(239,68,68,0.12); color: #f87171; }
 
 
@@ -672,7 +672,7 @@ body.auth-locked .nav-wrapper {
 }
 
 .login-row input:focus {
-  border-color: var(--accent);
+  border-color: var(--accentColour);
   box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.5);
 }
 
