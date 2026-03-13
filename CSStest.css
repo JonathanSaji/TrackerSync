@@ -816,3 +816,15 @@ body.auth-locked .nav-wrapper {
 }
 
 
+.insights-section {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.insights-section .section-label,
+.insights-section .section-title,
+.insights-section .section-sub {
+  text-align: center;
+}
+
