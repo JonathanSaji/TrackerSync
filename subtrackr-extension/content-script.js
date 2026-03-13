@@ -122,17 +122,17 @@ function showSubtrackrPopup() {
   root.id = "subtrackr-subscription-helper-root";
 
   root.innerHTML = `
-    <div class="subtrackr-card" role="dialog" aria-live="polite" aria-label="SUBTRACKR reminder">
+    <div class="subtrackr-card" role="dialog" aria-live="polite" aria-label="Sub Sync reminder">
       <div class="subtrackr-header">
-        <h2 class="subtrackr-title">Thinking of a new subscription?</h2>
+        <h2 class="subtrackr-title">Thinking of a New Subscription?</h2>
         <button class="subtrackr-close-button" aria-label="Dismiss reminder">✕</button>
       </div>
       <div class="subtrackr-body">
-        Make sure to log your subscription in <strong>SUBTRACKR</strong> so you can keep track of costs later.
+        Make sure to log your subscription with <strong>Sub Sync</strong>.
       </div>
       <div class="subtrackr-actions">
         <button class="subtrackr-primary-button">
-          Open SUBTRACKR dashboard
+          Open Sub Sync
         </button>
         <span class="subtrackr-secondary-text">Opens in a new tab</span>
       </div>
