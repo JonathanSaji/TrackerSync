@@ -109,12 +109,12 @@ app.post('/api/ask', async (req, res) => {
   const subscriptionText = subscriptions
   .map(sub => {
     const cost = sub.amount ?? 0;
-    const lastUsed = sub.date ?? "unknown";
-    const emotionalValue = sub.emotionalValue ?? "N/A";
+    const renewal = sub.date ?? "unknown";
+    //const emotionalValue = sub.emotionalValue ?? "N/A";
     const category = sub.subscriptionType ?? "Other";
     const trialStatus = sub.isTrial ? "Trial" : "Paid";
 
-    return `${sub.name} costs $${cost}/month, last used ${lastUsed}, category ${category}, status ${trialStatus}, emotional value ${emotionalValue}/10.`;
+    return `${sub.name} costs $${cost}/month, renews on ${renewal}, category ${category}, status ${trialStatus},`; // emotional value ${emotionalValue}/10.
   })
   .join(" ");
 
@@ -129,7 +129,7 @@ app.post('/api/ask', async (req, res) => {
         },
         {
           role: "user",
-          content: `Subscription data: ${subscriptionText}, answer questions using this data when possible. \nUser question: ${question}`
+          content: `Subscription data: ${subscriptionText}, answer questions using this data when possible, give month names in words and days and year in numbers. \nUser question: ${question}`
         }
       ]
     });
