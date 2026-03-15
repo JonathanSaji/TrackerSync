@@ -10,7 +10,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-const app = express();
+const app = express();  
 app.use(cors());
 app.use(express.json());
 
@@ -159,6 +159,38 @@ const subscriptionText = subscriptions
     res.status(500).json({ error: 'Failed to get AI response' });
   }
 });
+
+
+
+
+const emailsPath = path.join(__dirname, 'data', 'emails.json');
+
+// ensure emails.json exists
+if (!fs.existsSync(emailsPath)) {
+  fs.writeFileSync(emailsPath, JSON.stringify([], null, 2));
+}
+
+app.post('/subscribe', (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email required' });
+
+  let emails = [];
+  try {
+    emails = JSON.parse(fs.readFileSync(emailsPath, 'utf-8'));
+  } catch (err) {
+    emails = [];
+  }
+
+  if (!emails.includes(email)) {
+    emails.push(email);
+    fs.writeFileSync(emailsPath, JSON.stringify(emails, null, 2));
+  }
+
+  res.json({ success: true });
+});
+
+
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

@@ -436,6 +436,39 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Enter") sendChat();
     });
 
+    const signupEmailInput = document.getElementById("emailReminderInput");
+    const signupEmailBtn = document.getElementById("emailReminderBtn");
+    const signupEmailError = document.getElementById("signupEmailError"); // add this div under your input
+
+    signupEmailBtn?.addEventListener("click", async () => {
+    const email = signupEmailInput.value.trim();
+    if (!email) {
+        signupEmailError.textContent = "Please enter a valid email.";
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.ok) {
+        signupEmailError.style.color = "green";
+        signupEmailError.textContent = "Signed up successfully!";
+        signupEmailInput.value = "";
+        } else {
+        signupEmailError.style.color = "red";
+        signupEmailError.textContent = "Failed to sign up.";
+        }
+    } catch (err) {
+        console.error(err);
+        signupEmailError.style.color = "red";
+        signupEmailError.textContent = "Server error, try again.";
+    }
+    });
+
     loadSubscriptions();
 });
 
@@ -955,3 +988,26 @@ function renderPieChart() {
         centerEl.textContent = `$${total.toFixed(2)}`;
     }
 }
+
+const emailInput = document.getElementById('emailReminderInput');
+const emailBtn = document.getElementById('emailReminderBtn');
+
+emailBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  if (!email) return alert('Enter a valid email');
+
+  try {
+    const res = await fetch('/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (data.success) alert('Subscribed successfully!');
+  } catch (err) {
+    console.error(err);
+    alert('Failed to subscribe');
+  }
+});
+
+
