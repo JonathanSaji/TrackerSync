@@ -543,6 +543,7 @@ async function saveSubscription(sub) {
 
 }   */
 
+    /*
 async function saveSubscription(sub) {
     try {
         const savedTrial = await fetch('/api/subscriptions', {
@@ -563,7 +564,21 @@ async function saveSubscription(sub) {
         console.error(err);
     }
 }
+code messing things up worse bruh */ 
 
+async function saveSubscription(sub) {
+    const res = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub)
+    });
+
+    if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+    }
+
+    return await res.json();
+}
 
 
 async function deleteSubscription(id) {
