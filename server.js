@@ -155,7 +155,7 @@ const subscriptionText = subscriptions
       ? ` User personal value rating ${sub.personalValue} out of 10.`
       : "";
 
-    return `${sub.name} is a ${category} subscription, status ${trialStatus}. It costs $${cycleCost} per ${cycle} cycle (about $${monthlyCost}/month). Next billing date ${nextBilling}.${trialEnd}${personalValue}`;
+    return `${sub.name} is a ${category} subscription, status ${trialStatus}. It costs $${cycleCost} per ${cycle} cycle (about $${monthlyCost}/month). Next billing date ${nextBilling}.${trialEnd}, Personal value: ${personalValue}`;
   })
   .join(" ");
 
