@@ -88,14 +88,11 @@ Make sure your payment method is up to date!`
         console.log(`Reminder sent to ${email} for ${sub.name}: ${info.messageId}`);
 
         emailsSent.push({ subId: sub.id, email });
+        writeJSON(emailsSentPath, emailsSent); // persist after each send to avoid duplicates if process crashes
         updated = true;
       }
     }
   }
-
-  if (updated) writeJSON(emailsSentPath, emailsSent);
-  //console.log("emailsSent.json updated");
-
 }
 
 module.exports = { sendEmailReminders };
