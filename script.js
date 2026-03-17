@@ -237,17 +237,16 @@ document.addEventListener("DOMContentLoaded", () => {
             personalValue: personalValue
         };
 
-        const ok = await saveSubscription(newSub);
-        if (!ok) {
-            errorEl.textContent = "Failed to save. Is the server running?";
-            return;
-        }
-
-        subscriptions.push(newSub);
+        try {
+        const savedSub = await saveSubscription(newSub); // calls your new function
+        subscriptions.push(savedSub);                     // push the server-modified object
         renderSubscriptions();
         updateAllStats();
         closeSubForm();
-    });
+        } catch (err) {
+            errorEl.textContent = "Failed to save. Is the server running?";
+        }
+            });
 
     // ==========================================
     // 3. FREE TRIAL FORM STEP NAV + SUBMIT
@@ -323,13 +322,22 @@ document.addEventListener("DOMContentLoaded", () => {
             isTrial: true
         };
 
-        const ok = await saveSubscription(newTrial);
+        /*const ok = await saveSubscription(newTrial);
         if (!ok) {
             errorEl.textContent = "Failed to save. Is the server running?";
             return;
-        }
+        } from merge, dont want this one */ 
 
-        subscriptions.push(newTrial);
+        const res = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTrial)
+        });
+
+        const savedTrial = await res.json();
+
+
+        subscriptions.push(savedTrial);
         renderSubscriptions();
         updateAllStats();
         closeTrialForm();
@@ -386,28 +394,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = loginPassword?.value;
         if (!username || !password) return;
 
-        try {
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            const data = await res.json();
-            if (data.success) {
-                currentUser = data.user;
-                loginError.textContent = '';
-                updateAuthUi();
-                loadSubscriptions();
-
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(err => {
-                        console.warn('Fullscreen request failed:', err);
-                    });
-                }
-
-            } else {
-                loginError.textContent = 'Invalid username or password.';
-            }
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            currentUser = data.user;
+            loginError.textContent = '';
+            updateAuthUi();
+            //loadSubscriptionsFromServer();     what does this even do??? it throws an error in f12 console
+        } else {
+            loginError.textContent = 'Invalid username or password.';
+        }
         } catch (err) {
             console.error(err);
             loginError.textContent = 'Error connecting to server.';
@@ -480,6 +481,62 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Enter") sendChat();
     });
 
+
+    // ==========================================
+    // EMAIL REMINDER SIGNUP
+    const emailInput = document.getElementById('emailReminderInput');
+    const emailBtn = document.getElementById('emailReminderBtn');
+    const emailMessage = document.getElementById('emailSignupMessage');
+
+    emailBtn.addEventListener('click', async () => {
+    console.log("Subscribe button clicked");
+
+    const email = emailInput.value.trim();
+    if (!email) {
+        if (emailMessage) {
+        emailMessage.style.color = "red";
+        emailMessage.textContent = "Enter a valid email.";
+        } else {
+        alert("Enter a valid email.");
+        }
+        return;
+    }
+
+    try {
+        const res = await fetch('/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+        console.log("Server response:", data);
+
+        if (emailMessage) {
+        if (data.success) {
+            emailMessage.style.color = "green";
+            emailMessage.textContent = "Subscribed successfully!";
+            emailInput.value = ""; // clear input
+        } else {
+            emailMessage.style.color = "red";
+            emailMessage.textContent = "Failed to subscribe.";
+        }
+        } else {
+        alert(data.success ? "Subscribed successfully!" : "Failed to subscribe.");
+        }
+
+    } catch (err) {
+        console.error("Fetch error:", err);
+        if (emailMessage) {
+        emailMessage.style.color = "red";
+        emailMessage.textContent = "Server error, try again.";
+        } else {
+        alert("Server error, try again.");
+        }
+    }
+});
+
+
     loadSubscriptions();
 });
 
@@ -512,20 +569,61 @@ if (window.location.hash === '#ai-advisor') {
     }
 }
 
-// Loading and saving from the json file
+
+/*
+async function saveSubscription(sub) {
+
+    const res = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub)
+    });
+
+    if (!res.ok) {
+        throw new Error("Failed to save subscription");
+    }
+
+    return await res.json(); // THIS is the important part
+
+}   */
+
+    /*
 async function saveSubscription(sub) {
     try {
-        const res = await fetch('/api/subscriptions', {
+        const savedTrial = await fetch('/api/subscriptions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(sub)
+        }).then(res => {
+            if (!res.ok) throw new Error("Failed to save subscription");
+            return res.json();
         });
-        return res.ok;
+
+        subscriptions.push(savedTrial);
+        renderSubscriptions();
+        updateAllStats();
+        closeTrialForm();
     } catch (err) {
-        console.error('Failed to save:', err);
-        return false;
+        if (errorEl) errorEl.textContent = "Failed to save. Is the server running?";
+        console.error(err);
     }
 }
+code messing things up worse bruh */ 
+
+async function saveSubscription(sub) {
+    const res = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub)
+    });
+
+    if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+    }
+
+    return await res.json();
+}
+
 
 async function deleteSubscription(id) {
     try {
@@ -1036,3 +1134,6 @@ function renderPieChart() {
         centerEl.textContent = `$${total.toFixed(2)}`;
     }
 }
+
+
+
