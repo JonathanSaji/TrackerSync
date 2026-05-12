@@ -55,7 +55,15 @@ const pool = new Pool({
   }
 });
 
-module.exports = pool;
+async function ensureDbTestTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS db_smoke_test (
+      id SERIAL PRIMARY KEY,
+      label TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+}
 
 function capitalizeWords(str) {
   return str
@@ -128,6 +136,57 @@ app.delete('/api/subscriptions/:id', (req, res) => {
   persist();
 
   res.json({ ok: true });
+});
+
+// Database smoke-test endpoints for quick Neon connectivity checks
+app.get('/api/db-test', async (req, res) => {
+  try {
+    await ensureDbTestTable();
+    const result = await pool.query(
+      'SELECT id, label, created_at FROM db_smoke_test ORDER BY id DESC LIMIT 25'
+    );
+    res.json({ success: true, rows: result.rows });
+  } catch (err) {
+    console.error('DB test list failed:', err.message);
+    res.status(500).json({ success: false, error: 'DB test list failed', details: err.message });
+  }
+});
+
+app.post('/api/db-test', async (req, res) => {
+  const label = (req.body?.label || 'smoke-test').toString().trim();
+
+  try {
+    await ensureDbTestTable();
+    const result = await pool.query(
+      'INSERT INTO db_smoke_test (label) VALUES ($1) RETURNING id, label, created_at',
+      [label]
+    );
+    res.status(201).json({ success: true, row: result.rows[0] });
+  } catch (err) {
+    console.error('DB test insert failed:', err.message);
+    res.status(500).json({ success: false, error: 'DB test insert failed', details: err.message });
+  }
+});
+
+app.delete('/api/db-test/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, error: 'Valid numeric id required' });
+  }
+
+  try {
+    await ensureDbTestTable();
+    const result = await pool.query('DELETE FROM db_smoke_test WHERE id = $1 RETURNING id', [id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Row not found' });
+    }
+
+    res.json({ success: true, deletedId: id });
+  } catch (err) {
+    console.error('DB test delete failed:', err.message);
+    res.status(500).json({ success: false, error: 'DB test delete failed', details: err.message });
+  }
 });
 
 // AI response endpoint
