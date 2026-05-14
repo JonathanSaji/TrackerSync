@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { sendEmailReminders } = require('./emailReminders');
 
 require("dotenv").config({ quiet: true });
@@ -16,14 +17,6 @@ app.use(cors());
 app.use(express.json());
 
 
-const emailsPath = path.join(__dirname, 'data', 'emails.json');
-const emailsSentPath = path.join(__dirname, 'data', 'emailsSent.json');
-
-// Reset emails and sent records on server start
-fs.writeFileSync(emailsPath, JSON.stringify([], null, 2), 'utf-8');
-fs.writeFileSync(emailsSentPath, JSON.stringify([], null, 2), 'utf-8');
-console.log('emails.json and emailsSent.json have been reset on server start');
-
 // Serve static frontend files from the project root
 app.use(express.static(path.join(__dirname)));
 
@@ -34,14 +27,6 @@ app.get('/', (req, res) => {
 
 // Data file for email subscriptions only
 const DATA_DIR = path.join(__dirname, 'data');
-
-//console.log("USER1_NAME:", process.env.USER1_NAME);
-//console.log("USER1_PASS:", process.env.USER1_PASS);
-
-const VALID_USERS = {
-  [process.env.USER1_NAME]: process.env.USER1_PASS,
-  [process.env.USER2_NAME]: process.env.USER2_PASS
-};
 
 const { Pool } = require("pg");
 
@@ -68,9 +53,34 @@ function normalizeSubscriptionRow(row) {
   };
 }
 
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+  if (!storedHash || !storedHash.includes(':')) return false;
+  const [salt, originalHash] = storedHash.split(':');
+  const attemptedHash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(originalHash, 'hex'), Buffer.from(attemptedHash, 'hex'));
+}
+
+function redactSensitiveBody(body) {
+  if (!body || typeof body !== 'object') return body;
+  const redacted = { ...body };
+  const sensitiveKeys = ['password', 'signupPassword', 'loginPassword'];
+  for (const key of sensitiveKeys) {
+    if (Object.prototype.hasOwnProperty.call(redacted, key)) {
+      redacted[key] = '[REDACTED]';
+    }
+  }
+  return redacted;
+}
+
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
-    console.log(`[API] ${req.method} ${req.path}`, req.method === 'GET' ? '' : req.body || '');
+    console.log(`[API] ${req.method} ${req.path}`, req.method === 'GET' ? '' : redactSensitiveBody(req.body) || '');
     const startedAt = Date.now();
     res.on('finish', () => {
       console.log(`[API] ${req.method} ${req.path} -> ${res.statusCode} (${Date.now() - startedAt}ms)`);
@@ -83,6 +93,7 @@ async function ensureSubscriptionsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS subscriptions (
       id BIGINT PRIMARY KEY,
+      user_id BIGINT,
       name TEXT NOT NULL,
       amount NUMERIC(10, 2),
       date TEXT,
@@ -92,10 +103,38 @@ async function ensureSubscriptionsTable() {
       "billingCycle" TEXT DEFAULT 'Monthly',
       "amountPerCycle" NUMERIC(10, 2),
       "personalValue" SMALLINT,
+      last_reminder_sent_date TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW()
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      FOREIGN KEY (user_id) REFERENCES accounts(id) ON DELETE CASCADE
     )
   `);
+  
+  try {
+    await pool.query(`
+      ALTER TABLE subscriptions
+      ADD COLUMN user_id BIGINT REFERENCES accounts(id) ON DELETE CASCADE
+    `);
+  } catch (err) {
+    if (err.code === '42701') {
+      console.log('[DB] user_id column already exists on subscriptions table');
+    } else {
+      throw err;
+    }
+  }
+
+  try {
+    await pool.query(`
+      ALTER TABLE subscriptions
+      ADD COLUMN last_reminder_sent_date TEXT
+    `);
+  } catch (err) {
+    if (err.code === '42701') {
+      console.log('[DB] last_reminder_sent_date column already exists on subscriptions table');
+    } else {
+      throw err;
+    }
+  }
 }
 
 async function ensureAccountsTable() {
@@ -116,6 +155,9 @@ async function ensureAccountsTable() {
       CHECK (position('@' in email) > 1)
     )
   `);
+
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS accounts_username_lower_uq ON accounts (LOWER(username))`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS accounts_email_lower_uq ON accounts (LOWER(email))`);
 }
 
 async function ensureDbTestTable() {
@@ -136,24 +178,116 @@ function capitalizeWords(str) {
     .join(' ');
 }
 
-// Login endpoint
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    if (VALID_USERS[username] && VALID_USERS[username] === password) {
-        return res.json({ success: true, user: username });
+// Login endpoint (username or email + password)
+app.post('/api/login', async (req, res) => {
+  const identifier = (req.body?.identifier ?? req.body?.username ?? '').trim();
+  const password = req.body?.password ?? '';
+
+  if (!identifier || !password) {
+    return res.status(400).json({ success: false, error: 'identifier and password required' });
+  }
+
+  try {
+    const accountResult = await pool.query(
+      `SELECT id, username, email, password_hash, role, is_active
+       FROM accounts
+       WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)
+       LIMIT 1`,
+      [identifier]
+    );
+
+    if (accountResult.rowCount === 0) {
+      return res.json({ success: false });
     }
-    return res.json({ success: false });
+
+    const account = accountResult.rows[0];
+    if (!account.is_active) {
+      return res.status(403).json({ success: false, error: 'Account is disabled' });
+    }
+
+    const validPassword = verifyPassword(password, account.password_hash);
+    if (!validPassword) {
+      return res.json({ success: false });
+    }
+
+    await pool.query(
+      'UPDATE accounts SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1',
+      [account.id]
+    );
+
+    return res.json({
+      success: true,
+      user: account.username,
+      userId: Number(account.id),
+      email: account.email,
+      role: account.role
+    });
+  } catch (err) {
+    console.error('Login failed:', err.message);
+    return res.status(500).json({ success: false, error: 'Login failed' });
+  }
+});
+
+// Create account endpoint
+app.post('/api/signup', async (req, res) => {
+  const username = (req.body?.username ?? '').trim();
+  const email = (req.body?.email ?? '').trim().toLowerCase();
+  const password = req.body?.password ?? '';
+
+  if (!username || !email || !password) {
+    return res.status(400).json({ success: false, error: 'username, email, and password are required' });
+  }
+
+  if (username.length < 3) {
+    return res.status(400).json({ success: false, error: 'username must be at least 3 characters' });
+  }
+
+  if (password.length < 1) {
+    return res.status(400).json({ success: false, error: 'password cannot be empty' });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, error: 'invalid email format' });
+  }
+
+  try {
+    const passwordHash = hashPassword(password);
+    const result = await pool.query(
+      `INSERT INTO accounts (username, email, password_hash, display_name)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, username, email, display_name, role, is_active, email_verified, created_at, updated_at`,
+      [username, email, passwordHash, username]
+    );
+
+    return res.status(201).json({ success: true, account: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ success: false, error: 'username or email already exists' });
+    }
+
+    console.error('Signup failed:', err.message);
+    return res.status(500).json({ success: false, error: 'Signup failed' });
+  }
 });
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-// Get all subscriptions from database
+// Get all subscriptions for current user from database
 app.get('/api/subscriptions', async (req, res) => {
+  const userId = req.body?.userId || req.query?.userId;
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'userId required' });
+  }
+
   try {
-    const result = await pool.query('SELECT * FROM subscriptions ORDER BY created_at DESC');
+    const result = await pool.query(
+      'SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
     const rows = result.rows.map(normalizeSubscriptionRow);
-    console.log(`[DB] fetched ${rows.length} subscriptions`);
+    console.log(`[DB] fetched ${rows.length} subscriptions for user ${userId}`);
     res.json(rows);
   } catch (err) {
     console.error('Failed to fetch subscriptions:', err.message);
@@ -166,6 +300,7 @@ app.post('/api/subscriptions', async (req, res) => {
   const sub = req.body;
   if (!sub.name) return res.status(400).json({ error: 'name required' });
   if (!sub.id) return res.status(400).json({ error: 'id required' });
+  if (!sub.userId) return res.status(400).json({ error: 'userId required' });
 
   const name = capitalizeWords(sub.name);
   const amount = sub.amount ?? null;
@@ -176,13 +311,14 @@ app.post('/api/subscriptions', async (req, res) => {
   const billingCycle = sub.billingCycle ?? 'Monthly';
   const amountPerCycle = sub.amountPerCycle ?? null;
   const personalValue = sub.personalValue ?? null;
+  const userId = sub.userId;
 
   try {
     const result = await pool.query(
-      `INSERT INTO subscriptions (id, name, amount, date, "subscriptionType", color, "isTrial", "billingCycle", "amountPerCycle", "personalValue")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO subscriptions (id, user_id, name, amount, date, "subscriptionType", color, "isTrial", "billingCycle", "amountPerCycle", "personalValue")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [sub.id, name, amount, date, subscriptionType, color, isTrial, billingCycle, amountPerCycle, personalValue]
+      [sub.id, userId, name, amount, date, subscriptionType, color, isTrial, billingCycle, amountPerCycle, personalValue]
     );
     const savedRow = normalizeSubscriptionRow(result.rows[0]);
     console.log('[DB] saved subscription:', savedRow);
@@ -204,14 +340,22 @@ app.post('/api/subscriptions', async (req, res) => {
   }
 });
 
-// Delete a subscription by id
+// Delete a subscription by id (verify user ownership)
 app.delete('/api/subscriptions/:id', async (req, res) => {
   const id = req.params.id;
+  const userId = req.body?.userId || req.query?.userId;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'userId required' });
+  }
 
   try {
-    const result = await pool.query('DELETE FROM subscriptions WHERE id = $1 RETURNING id', [id]);
-    if (result.rowCount === 0) return res.status(404).json({ error: 'not found' });
-    console.log(`[DB] deleted subscription id ${id}`);
+    const result = await pool.query(
+      'DELETE FROM subscriptions WHERE id = $1 AND user_id = $2 RETURNING id',
+      [id, userId]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'not found or unauthorized' });
+    console.log(`[DB] deleted subscription id ${id} for user ${userId}`);
     res.json({ ok: true });
   } catch (err) {
     console.error('Failed to delete subscription:', err.message);
@@ -297,12 +441,16 @@ app.get('/api/accounts-schema-info', async (req, res) => {
 
 // AI response endpoint
 app.post('/api/ask', async (req, res) => {
-  const { question } = req.body;
+  const { question, userId } = req.body;
   if (!question) return res.status(400).json({ error: 'No question provided' });
+  if (!userId) return res.status(400).json({ error: 'userId required' });
 
   try {
-    // Fetch subscriptions from database
-    const dbResult = await pool.query('SELECT * FROM subscriptions');
+    // Fetch subscriptions from database for this user
+    const dbResult = await pool.query(
+      'SELECT * FROM subscriptions WHERE user_id = $1',
+      [userId]
+    );
     const subscriptions = dbResult.rows.map(normalizeSubscriptionRow);
 
     // Build subscription text for context
@@ -360,58 +508,12 @@ app.post('/api/ask', async (req, res) => {
   }
 });
 
-
-
-
-//const emailsPath = path.join(__dirname, 'data', 'emails.json');
-//const emailsSentPath = path.join(__dirname, 'data', 'emailsSent.json');
-
-// ensure emails.json exists
-if (!fs.existsSync(emailsPath)) {
-  fs.writeFileSync(emailsPath, JSON.stringify([], null, 2));
-}
-
-app.post('/subscribe', (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
-
-    // Special reset keyword
-  if (email.toLowerCase() === 'resetemails') {
-    console.log('Resetting emails.json to empty array');
-    fs.writeFileSync(emailsPath, JSON.stringify([], null, 2), 'utf-8');
-    return res.json({ success: true, message: 'emails.json has been reset' });
-  }
-
-  if (email.toLowerCase() === 'resetsent') {
-  fs.writeFileSync(emailsSentPath, JSON.stringify([], null, 2), 'utf-8');
-  return res.json({ success: true, message: 'emailsSent.json reset' });
-  }
-
-  let emails = [];
-  try {
-    emails = JSON.parse(fs.readFileSync(emailsPath, 'utf-8'));
-  } catch (err) {
-    emails = [];
-  }
-
-  if (!emails.includes(email)) {
-    emails.push(email);
-    fs.writeFileSync(emailsPath, JSON.stringify(emails, null, 2));
-  }
-
-  res.json({ success: true });
-
-});
-
-// Run every hour (1000 ms * 60 sec * 60 min)
+// Email reminder check every 10 seconds
 setInterval(() => {
   sendEmailReminders(pool)
-    .then(() => console.log("Email check done"))
-    .catch(err => console.error("Email check failed:", err));
-}, 10000); // 10 sec
-
-
-
+    .then(() => console.log("Email reminder check completed"))
+    .catch(err => console.error("Email reminder check failed:", err));
+}, 10000);
 
 async function startServer() {
   try {

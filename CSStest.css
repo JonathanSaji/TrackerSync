@@ -693,8 +693,15 @@ input[type="range"]#subValue::-moz-range-thumb {
 
 /*================= LOGIN ===================*/
 /* Auth lock state */
-body.auth-locked main,
-body.auth-locked .nav-wrapper {
+body.auth-locked {
+  overflow: hidden;
+}
+
+body.auth-locked .app-header,
+body.auth-locked .app-page,
+body.auth-locked .email-reminder-section,
+body.auth-locked .app-footer,
+body.auth-locked .modal-overlay {
   filter: blur(3px);
   pointer-events: none;
   user-select: none;
@@ -711,12 +718,12 @@ body.auth-locked .nav-wrapper {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  z-index: 60;
+  z-index: 10000;
 }
 
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
   border-radius: 22px;
   background: linear-gradient(
     145deg,
@@ -725,18 +732,31 @@ body.auth-locked .nav-wrapper {
   );
   border: 1px solid rgba(250, 204, 21, 0.65);
   box-shadow: 0 26px 52px rgba(15, 10, 2, 0.9);
-  padding: 20px 20px 18px;
+  padding: 26px 24px 22px;
   color: var(--text-main);
+}
+
+.auth-brand {
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accentColour);
+  padding: 4px 10px;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: 999px;
+  margin-bottom: 10px;
 }
 
 .login-title {
   margin: 0 0 6px 0;
-  font-size: 1.3rem;
+  font-size: 1.55rem;
 }
 
 .login-subtitle {
-  margin: 0 0 12px 0;
-  font-size: 0.86rem;
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
   color: var(--text-muted);
 }
 
@@ -772,6 +792,58 @@ body.auth-locked .nav-wrapper {
   box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.5);
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 12px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.08), rgba(250, 204, 21, 0.45), rgba(250, 204, 21, 0.08));
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.signup-submit {
+  margin-top: 4px;
+  width: 100%;
+  justify-content: center;
+  opacity: 0.75;
+}
+
+.signup-submit:disabled {
+  cursor: not-allowed;
+}
+
+.auth-link-btn {
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  color: var(--accentColour);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.auth-link-btn:hover {
+  color: #f8e88d;
+}
+
 .login-error {
   min-height: 1.1em;
   font-size: 0.78rem;
@@ -787,6 +859,17 @@ body.auth-locked .nav-wrapper {
   font-size: 0.78rem;
   color: var(--text-muted);
   margin-right: 8px;
+}
+
+@media (max-width: 640px) {
+  .login-card {
+    max-width: 96vw;
+    padding: 20px 16px 16px;
+  }
+
+  .login-title {
+    font-size: 1.32rem;
+  }
 }
 
 /*================= For Each Grou ===================*/

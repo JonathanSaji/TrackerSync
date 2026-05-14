@@ -357,24 +357,89 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     let currentUser = null;
+    let currentUserId = null;
 
     const loginOverlay = document.getElementById("loginOverlay");
     const loginForm = document.getElementById("loginForm");
     const loginUsername = document.getElementById("loginUsername");
     const loginPassword = document.getElementById("loginPassword");
     const loginError = document.getElementById("loginError");
+    const loginPanel = document.getElementById("loginPanel");
+    const signupPanel = document.getElementById("signupPanel");
+    const showSignupBtn = document.getElementById("showSignupBtn");
+    const showLoginBtn = document.getElementById("showLoginBtn");
+    const signupUsername = document.getElementById("signupUsername");
+    const signupEmail = document.getElementById("signupEmail");
+    const signupPassword = document.getElementById("signupPassword");
+    const signupError = document.getElementById("signupError");
+    const createAccountBtn = document.getElementById("createAccountBtn");
     const currentUserLabel = document.getElementById("currentUserLabel");
     const logoutBtn = document.getElementById("logoutBtn");
+
+    const setAuthMode = (mode) => {
+        if (mode === "signup") {
+            loginPanel?.classList.add("hidden");
+            signupPanel?.classList.remove("hidden");
+            if (loginError) loginError.textContent = "";
+        } else {
+            signupPanel?.classList.add("hidden");
+            loginPanel?.classList.remove("hidden");
+        }
+    };
+
+    showSignupBtn?.addEventListener("click", () => setAuthMode("signup"));
+    showLoginBtn?.addEventListener("click", () => setAuthMode("login"));
+
+    createAccountBtn?.addEventListener("click", async () => {
+        const username = signupUsername?.value.trim();
+        const email = signupEmail?.value.trim();
+        const password = signupPassword?.value;
+
+        if (!username || !email || !password) {
+            if (signupError) signupError.textContent = "Please fill in username, email, and password.";
+            return;
+        }
+
+        if (signupError) signupError.textContent = "";
+
+        try {
+            const res = await fetch('/api/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                if (signupError) signupError.textContent = data.error || 'Could not create account.';
+                return;
+            }
+
+            if (loginUsername) loginUsername.value = username;
+            if (loginPassword) loginPassword.value = '';
+            if (signupUsername) signupUsername.value = '';
+            if (signupEmail) signupEmail.value = '';
+            if (signupPassword) signupPassword.value = '';
+            if (loginError) loginError.textContent = 'Account created. Please log in.';
+            setAuthMode("login");
+        } catch (err) {
+            console.error(err);
+            if (signupError) signupError.textContent = 'Error connecting to server.';
+        }
+    });
 
     // Update UI based on auth state
     const updateAuthUi = () => {
         if (!currentUser) {
             document.body.classList.add("auth-locked");
+            document.body.style.overflow = "hidden";
             if (loginOverlay) loginOverlay.style.display = "flex";
             if (currentUserLabel) currentUserLabel.textContent = "Not signed in";
             hideHeader();
         } else {
             document.body.classList.remove("auth-locked");
+            document.body.style.overflow = "";
             if (loginOverlay) loginOverlay.style.display = "none";
             if (currentUserLabel) currentUserLabel.textContent = `Signed in as ${currentUser}`;
             showHeader();
@@ -382,12 +447,15 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     updateAuthUi();
+    setAuthMode("login");
 
     logoutBtn?.addEventListener("click", () => {
         currentUser = null;
+        currentUserId = null;
         if (loginUsername) loginUsername.value = "";
         if (loginPassword) loginPassword.value = "";
         if (loginError) loginError.textContent = "";
+        setAuthMode("login");
         updateAuthUi();
         if (document.fullscreenElement && document.exitFullscreen) {
             document.exitFullscreen();
@@ -396,22 +464,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loginForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const username = loginUsername?.value.trim();
+        const identifier = loginUsername?.value.trim();
         const password = loginPassword?.value;
-        if (!username || !password) return;
+        if (!identifier || !password) return;
 
     try {
         const res = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ identifier, password })
         });
         const data = await res.json();
         if (data.success) {
             currentUser = data.user;
+            currentUserId = data.userId;
             loginError.textContent = '';
+            setAuthMode("login");
             updateAuthUi();
-            //loadSubscriptionsFromServer();     what does this even do??? it throws an error in f12 console
+            loadSubscriptionsFromServer();
         } else {
             loginError.textContent = 'Invalid username or password.';
         }
@@ -460,7 +530,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch('/api/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: text })
+            body: JSON.stringify({ question: text, userId: currentUserId })
         })
             .then(res => res.json())
             .then(data => {
@@ -553,7 +623,7 @@ let subscriptions = []; //Subscription array to hold all subscription objects in
 // ==========================================
 async function loadSubscriptions() {
     try {
-        const res = await fetch('/api/subscriptions');
+        const res = await fetch(`/api/subscriptions?userId=${currentUserId}`);
         subscriptions = await res.json();
         console.log('Loaded subscriptions from server:', subscriptions);
     } catch (err) {
@@ -622,7 +692,7 @@ async function saveSubscription(sub) {
     const res = await fetch('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sub)
+        body: JSON.stringify({ ...sub, userId: currentUserId })
     });
 
     if (!res.ok) {
@@ -639,7 +709,11 @@ async function saveSubscription(sub) {
 
 async function deleteSubscription(id) {
     try {
-        const res = await fetch(`/api/subscriptions/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/subscriptions/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId })
+        });
         return res.ok;
     } catch (err) {
         console.error('Failed to delete:', err);

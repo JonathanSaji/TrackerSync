@@ -401,27 +401,47 @@
     </div>
   </div>
 
-<!-- Simple Login Overlay -->
+<!-- Auth Overlay -->
   <div class="login-overlay" id="loginOverlay" aria-hidden="false">
     <div class="login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-      <h1 class="login-title" id="loginTitle">Sign in to SubSync</h1>
-      <p class="login-subtitle">
-        Use one of the test accounts to log in:
-        <strong>user1 / pass1</strong> or <strong>user2 / pass2</strong>.
-      </p>
+      <div class="auth-brand">SubSync</div>
+      <h1 class="login-title" id="loginTitle">Welcome Back</h1>
+      <p class="login-subtitle">Sign in to manage your subscriptions.</p>
+
       <form class="login-form" id="loginForm">
-        <div class="login-row">
-          <label for="loginUsername">Username</label>
-          <input type="text" id="loginUsername" autocomplete="off" required />
+        <div id="loginPanel">
+          <div class="login-row">
+            <label for="loginUsername">Username or Email</label>
+            <input type="text" id="loginUsername" autocomplete="username" placeholder="username or email" required />
+          </div>
+          <div class="login-row">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" autocomplete="current-password" placeholder="password" required />
+          </div>
+          <p class="login-error" id="loginError" aria-live="polite"></p>
+          <button type="submit" class="btn login-submit">Log in</button>
+          <button type="button" class="auth-link-btn" id="showSignupBtn">Create account</button>
         </div>
-        <div class="login-row">
-          <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" required />
+        <div id="signupPanel" class="hidden">
+          <div class="auth-divider" aria-hidden="true"><span>Create Account</span></div>
+          <div class="signup-form" id="signupForm" novalidate>
+            <div class="login-row">
+              <label for="signupUsername">Username</label>
+              <input type="text" id="signupUsername" autocomplete="username" placeholder="choose a username" />
+            </div>
+            <div class="login-row">
+              <label for="signupEmail">Email</label>
+              <input type="email" id="signupEmail" autocomplete="email" placeholder="you@example.com" />
+            </div>
+            <div class="login-row">
+              <label for="signupPassword">Password</label>
+              <input type="password" id="signupPassword" autocomplete="new-password" placeholder="create a password" />
+            </div>
+            <p class="login-error" id="signupError" aria-live="polite"></p>
+            <button type="button" class="btn btn-outline signup-submit" id="createAccountBtn">Create account</button>
+            <button type="button" class="auth-link-btn" id="showLoginBtn">Back to login</button>
+          </div>
         </div>
-        <p class="login-error" id="loginError" aria-live="polite"></p>
-        <button type="submit" class="btn login-submit">
-          Log in
-        </button>
       </form>
     </div>
   </div>
