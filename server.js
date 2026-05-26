@@ -12,6 +12,44 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+function buildFallbackAiResponse(question, subscriptions) {
+  const totalMonthlyCost = subscriptions.reduce((total, sub) => {
+    const cycle = (sub.billingCycle ?? "Monthly").toLowerCase();
+    const cycleCost = sub.amountPerCycle ?? 0;
+
+    switch (cycle) {
+      case "yearly":
+        return total + (cycleCost / 12);
+      case "bi-monthly":
+        return total + (cycleCost / 2);
+      case "weekly":
+        return total + (cycleCost * 4);
+      case "monthly":
+      default:
+        return total + cycleCost;
+    }
+  }, 0);
+
+  if (!subscriptions.length) {
+    return "I couldn't reach the AI service, and I don't see any subscriptions on this account yet.";
+  }
+
+  const topSubscriptions = subscriptions
+    .slice(0, 3)
+    .map(sub => sub.name)
+    .join(", ");
+
+  const subscriptionCountText = subscriptions.length === 1
+    ? "1 subscription"
+    : `${subscriptions.length} subscriptions`;
+
+  const reviewText = subscriptions.length === 1
+    ? `The main item to review first is ${topSubscriptions}.`
+    : `The main items to review first are ${topSubscriptions}.`;
+
+  return `I couldn't reach the AI service right now, but I found ${subscriptionCountText} on this account. The estimated monthly total is $${totalMonthlyCost.toFixed(2)}. ${reviewText}`;
+}
+
 const app = express();  
 app.use(cors());
 app.use(express.json());
@@ -552,13 +590,15 @@ app.post('/api/ask', async (req, res) => {
   if (!question) return res.status(400).json({ error: 'No question provided' });
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
+  let subscriptions = [];
+
   try {
     // Fetch subscriptions from database for this user
     const dbResult = await pool.query(
       'SELECT * FROM subscriptions WHERE user_id = $1',
       [userId]
     );
-    const subscriptions = dbResult.rows.map(normalizeSubscriptionRow);
+    subscriptions = dbResult.rows.map(normalizeSubscriptionRow);
 
     // Build subscription text for context
     const subscriptionText = subscriptions
@@ -594,6 +634,14 @@ app.post('/api/ask', async (req, res) => {
       })
       .join(" ");
 
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(503).json({
+        answer: buildFallbackAiResponse(question, subscriptions),
+        fallback: true,
+        error: 'OPENAI_API_KEY is not configured'
+      });
+    }
+
     const response = await openai.chat.completions.create({
       model: "o3-mini",
       messages: [
@@ -610,8 +658,17 @@ app.post('/api/ask', async (req, res) => {
 
     res.json({ answer: response.choices[0].message.content });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to get AI response' });
+    console.error('OpenAI request failed:', {
+      message: err.message,
+      code: err.code,
+      type: err.type
+    });
+
+    res.status(503).json({
+      answer: buildFallbackAiResponse(question, subscriptions),
+      fallback: true,
+      error: 'AI service unavailable'
+    });
   }
 });
 
