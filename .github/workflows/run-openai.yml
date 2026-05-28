@@ -2,9 +2,9 @@ name: Open AI Build Check
 
 on:
   push:
-    branches: [ main, feature/backend ]
+    branches: [ main, feature/neon-db-setup ]
   pull_request:
-    branches: [ main, feature/backend ]
+    branches: [ main, feature/neon-db-setup ]
 
 jobs:
   build:
