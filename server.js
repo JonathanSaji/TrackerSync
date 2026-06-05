@@ -187,7 +187,7 @@ app.use((req, res, next) => {
 
 async function ensureSubscriptionsTable() {
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS subscriptions (
+    CREATE TABLE IF NOT EXISTS "TrackerSync".subscriptions (
       id BIGINT PRIMARY KEY,
       user_id BIGINT,
       name TEXT NOT NULL,
@@ -208,7 +208,7 @@ async function ensureSubscriptionsTable() {
   
   try {
     await pool.query(`
-      ALTER TABLE subscriptions
+      ALTER TABLE "TrackerSync".subscriptions
       ADD COLUMN user_id BIGINT REFERENCES accounts(id) ON DELETE CASCADE
     `);
   } catch (err) {
@@ -221,7 +221,7 @@ async function ensureSubscriptionsTable() {
 
   try {
     await pool.query(`
-      ALTER TABLE subscriptions
+      ALTER TABLE "TrackerSync".subscriptions
       ADD COLUMN last_reminder_sent_date TEXT
     `);
   } catch (err) {
@@ -381,7 +381,7 @@ app.get('/api/subscriptions', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC',
+      'SELECT * FROM "TrackerSync".subscriptions WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
     const rows = result.rows.map(normalizeSubscriptionRow);
@@ -413,7 +413,7 @@ app.post('/api/subscriptions', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO subscriptions (id, user_id, name, amount, date, "subscriptionType", color, "isTrial", "billingCycle", "amountPerCycle", "personalValue")
+      `INSERT INTO "TrackerSync".subscriptions (id, user_id, name, amount, date, "subscriptionType", color, "isTrial", "billingCycle", "amountPerCycle", "personalValue")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [sub.id, userId, name, amount, date, subscriptionType, color, isTrial, billingCycle, amountPerCycle, personalValue]
@@ -449,7 +449,7 @@ app.delete('/api/subscriptions/:id', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'DELETE FROM subscriptions WHERE id = $1 AND user_id = $2 RETURNING id',
+      'DELETE FROM "TrackerSync".subscriptions WHERE id = $1 AND user_id = $2 RETURNING id',
       [id, userId]
     );
     if (result.rowCount === 0) return res.status(404).json({ error: 'not found or unauthorized' });
@@ -482,13 +482,13 @@ app.delete('/api/admin/reset-users', async (req, res) => {
         return res.status(404).json({ success: false, error: `User "${username}" not found.` });
       }
       const userId = userResult.rows[0].id;
-      await pool.query('DELETE FROM subscriptions WHERE user_id = $1', [userId]);
+      await pool.query('DELETE FROM "TrackerSync".subscriptions WHERE user_id = $1', [userId]);
       await pool.query('DELETE FROM accounts WHERE id = $1', [userId]);
       logEvent('ADMIN', 'reset-users (single)', { username, userId, status: 'deleted' });
       return res.json({ success: true, message: `Deleted user "${username}" and their subscriptions.` });
     } else {
       // Delete all subscriptions then all accounts, then reset ID sequence to 0
-      const subDel = await pool.query('DELETE FROM subscriptions RETURNING id');
+      const subDel = await pool.query('DELETE FROM "TrackerSync".subscriptions RETURNING id');
       const accDel = await pool.query('DELETE FROM accounts RETURNING id');
       await pool.query(`ALTER SEQUENCE accounts_id_seq RESTART WITH 1`);
       logEvent('ADMIN', 'reset-users (all)', {
@@ -595,7 +595,7 @@ app.post('/api/ask', async (req, res) => {
   try {
     // Fetch subscriptions from database for this user
     const dbResult = await pool.query(
-      'SELECT * FROM subscriptions WHERE user_id = $1',
+      'SELECT * FROM "TrackerSync".subscriptions WHERE user_id = $1',
       [userId]
     );
     subscriptions = dbResult.rows.map(normalizeSubscriptionRow);

@@ -61,7 +61,7 @@ async function sendEmailReminders(pool) {
   // Fetch subscriptions from database if pool is provided
   if (pool) {
     try {
-      const result = await pool.query('SELECT * FROM subscriptions WHERE user_id IS NOT NULL');
+      const result = await pool.query('SELECT * FROM "TrackerSync".subscriptions WHERE user_id IS NOT NULL');
       subscriptions = result.rows.map(normalizeSubscriptionRow);
       console.log(`Email reminders loaded ${subscriptions.length} subscriptions from DB`);
     } catch (err) {
@@ -208,7 +208,7 @@ SubSync`;
 
         // Update the subscription to mark reminder as sent for this date
         await pool.query(
-          'UPDATE subscriptions SET last_reminder_sent_date = $1 WHERE id = $2',
+          'UPDATE "TrackerSync".subscriptions SET last_reminder_sent_date = $1 WHERE id = $2',
           [sub.date, sub.id]
         );
         console.log(`Updated subscription ${sub.id} last_reminder_sent_date to ${sub.date}`);
