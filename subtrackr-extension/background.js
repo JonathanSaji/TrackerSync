@@ -4,7 +4,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message && message.type === "OPEN_SUBTRACKR_DASHBOARD") {
     
     chrome.storage.sync.get(["dashboardUrl"], (result) => {
-      const DASHBOARD_URL = result.dashboardUrl || "http://localhost:3000/";
+      const DASHBOARD_URL = result.dashboardUrl || "https://trackersync.sub-sync.ca/";
       chrome.tabs.create({ url: DASHBOARD_URL });
       sendResponse({ ok: true });
     });

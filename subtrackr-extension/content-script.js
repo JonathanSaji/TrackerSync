@@ -1,5 +1,5 @@
 // Skip running on the SubTrackr app itself
-if (window.location.origin === "http://localhost:3000") {
+if (window.location.origin === "https://trackersync.sub-sync.ca/") {
   throw new Error("SubTrackr: skipping own app page");
 }
 
