@@ -410,6 +410,116 @@ document.addEventListener("DOMContentLoaded", () => {
     const createAccountBtn = document.getElementById("createAccountBtn");
     const currentUserLabel = document.getElementById("currentUserLabel");
     const logoutBtn = document.getElementById("logoutBtn");
+    const notificationBellBtn = document.getElementById("notificationBellBtn");
+    const notificationUnreadBadge = document.getElementById("notificationUnreadBadge");
+    const notificationPanel = document.getElementById("notificationPanel");
+    const notificationPanelList = document.getElementById("notificationPanelList");
+    const notificationRefreshBtn = document.getElementById("notificationRefreshBtn");
+
+    let notifications = [];
+    let isNotificationPanelOpen = false;
+
+    function formatRelativeTime(dateValue) {
+        if (!dateValue) return 'Unknown time';
+        const then = new Date(dateValue).getTime();
+        if (Number.isNaN(then)) return 'Unknown time';
+        const now = Date.now();
+        const diffMs = Math.max(0, now - then);
+        const minutes = Math.floor(diffMs / 60000);
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return `${days}d ago`;
+    }
+
+    function renderNotifications() {
+        if (!notificationPanelList || !notificationUnreadBadge) return;
+
+        const unreadCount = notifications.filter((n) => !n.readAt).length;
+        notificationUnreadBadge.textContent = String(unreadCount);
+        notificationUnreadBadge.classList.toggle('hidden', unreadCount === 0);
+
+        if (!notifications.length) {
+            notificationPanelList.innerHTML = '<p class="notification-empty">No notifications yet.</p>';
+            return;
+        }
+
+        notificationPanelList.innerHTML = '';
+
+        notifications.forEach((item) => {
+            const card = document.createElement('article');
+            card.className = `notification-item ${item.readAt ? '' : 'is-unread'}`;
+            card.dataset.id = String(item.id);
+            card.innerHTML = `
+                <div class="notification-item-title">${item.title}</div>
+                <div class="notification-item-message">${item.message}</div>
+                <div class="notification-item-time">${formatRelativeTime(item.createdAt)}</div>
+            `;
+
+            card.addEventListener('click', async () => {
+                if (item.readAt || !currentUserId) return;
+                try {
+                    const res = await fetch(`/api/notifications/${item.id}/read?userId=${currentUserId}`, {
+                        method: 'POST'
+                    });
+                    if (!res.ok) return;
+                    item.readAt = new Date().toISOString();
+                    renderNotifications();
+                } catch (err) {
+                    console.warn('Failed to mark notification as read:', err.message);
+                }
+            });
+
+            notificationPanelList.appendChild(card);
+        });
+    }
+
+    async function fetchNotifications() {
+        if (!currentUserId) {
+            notifications = [];
+            renderNotifications();
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/notifications?userId=${currentUserId}&limit=30`);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch notifications (${res.status})`);
+            }
+            const data = await res.json();
+            notifications = Array.isArray(data.notifications) ? data.notifications : [];
+            renderNotifications();
+        } catch (err) {
+            console.warn('Could not load notifications:', err.message);
+        }
+    }
+
+    function setNotificationPanelOpen(open) {
+        if (!notificationPanel) return;
+        isNotificationPanelOpen = open;
+        notificationPanel.classList.toggle('hidden', !open);
+    }
+
+    notificationBellBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setNotificationPanelOpen(!isNotificationPanelOpen);
+    });
+
+    notificationRefreshBtn?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await fetchNotifications();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!isNotificationPanelOpen) return;
+        if (!notificationPanel || !notificationBellBtn) return;
+        const target = e.target;
+        if (!(target instanceof Node)) return;
+        if (notificationPanel.contains(target) || notificationBellBtn.contains(target)) return;
+        setNotificationPanelOpen(false);
+    });
 
     const setAuthMode = (mode) => {
         if (mode === "signup") {
@@ -478,6 +588,9 @@ document.addEventListener("DOMContentLoaded", () => {
             document.body.style.overflow = "hidden";
             if (loginOverlay) loginOverlay.style.display = "flex";
             if (currentUserLabel) currentUserLabel.textContent = "Not signed in";
+            notifications = [];
+            renderNotifications();
+            setNotificationPanelOpen(false);
             hideHeader();
         } else {
             document.body.classList.remove("auth-locked");
@@ -498,6 +611,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (loginUsername) loginUsername.value = "";
         if (loginPassword) loginPassword.value = "";
         if (loginError) loginError.textContent = "";
+        notifications = [];
+        renderNotifications();
+        setNotificationPanelOpen(false);
         setAuthMode("login");
         updateAuthUi();
         if (document.fullscreenElement && document.exitFullscreen) {
@@ -531,6 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
             setAuthMode("login");
             updateAuthUi();
             await loadSubscriptions();
+            await fetchNotifications();
         } else {
             logEvent('DB', 'SELECT accounts', { identifier, status: 'error', error: 'invalid credentials' });
             loginError.textContent = 'Invalid username or password.';
@@ -665,6 +782,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     loadSubscriptions();
+    fetchNotifications();
+    setInterval(() => {
+        fetchNotifications().catch(() => {});
+    }, 60000);
 });
 
 let subscriptions = []; //Subscription array to hold all subscription objects in memory

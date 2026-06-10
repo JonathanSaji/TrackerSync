@@ -29,8 +29,22 @@
       </div>
 
       <div class="nav-right">
+        <button class="notification-bell" id="notificationBellBtn" type="button" aria-label="Open notifications">
+          <span class="notification-bell-icon">🔔</span>
+          <span class="notification-unread-badge hidden" id="notificationUnreadBadge">0</span>
+        </button>
         <span class="current-user-label" id="currentUserLabel">Not signed in</span>
         <button class="btn" id="logoutBtn" type="button">Log out</button>
+      </div>
+
+      <div class="notification-panel hidden" id="notificationPanel" aria-live="polite">
+        <div class="notification-panel-header">
+          <h3>Trip Notifications</h3>
+          <button id="notificationRefreshBtn" type="button">Refresh</button>
+        </div>
+        <div class="notification-panel-list" id="notificationPanelList">
+          <p class="notification-empty">No notifications yet.</p>
+        </div>
       </div>
 
       <div class = "header-main"></div>

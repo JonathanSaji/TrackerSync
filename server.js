@@ -4,6 +4,12 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { sendEmailReminders } = require('./emailReminders');
+const {
+  ensureTripReminderTables,
+  processTripReminders,
+  listTripNotifications,
+  markTripNotificationRead
+} = require('./tripReminders');
 
 require("dotenv").config({ quiet: true });
 const OpenAI = require("openai");
@@ -584,6 +590,89 @@ app.get('/api/accounts-schema-info', async (req, res) => {
   }
 });
 
+app.post('/api/trip-reminders/process', async (req, res) => {
+  const tripIdInput = req.body?.tripId;
+  const userIdInput = req.body?.userId;
+
+  const options = {};
+
+  if (tripIdInput !== undefined && tripIdInput !== null && tripIdInput !== '') {
+    const parsedTripId = Number(tripIdInput);
+    if (!Number.isInteger(parsedTripId) || parsedTripId <= 0) {
+      return res.status(400).json({ success: false, error: 'tripId must be a positive integer' });
+    }
+    options.tripId = parsedTripId;
+  }
+
+  if (userIdInput !== undefined && userIdInput !== null && userIdInput !== '') {
+    const parsedUserId = Number(userIdInput);
+    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+      return res.status(400).json({ success: false, error: 'userId must be a positive integer' });
+    }
+    options.userId = parsedUserId;
+  }
+
+  try {
+    const summary = await processTripReminders(pool, options);
+    return res.json({ success: true, summary });
+  } catch (err) {
+    console.error('Trip reminder processing failed:', err.message);
+    return res.status(500).json({ success: false, error: 'Trip reminder processing failed' });
+  }
+});
+
+app.get('/api/notifications', async (req, res) => {
+  const userIdInput = req.query?.userId || req.body?.userId;
+  const limitInput = req.query?.limit;
+
+  if (!userIdInput) {
+    return res.status(400).json({ success: false, error: 'userId required' });
+  }
+
+  const parsedUserId = Number(userIdInput);
+  if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+    return res.status(400).json({ success: false, error: 'userId must be a positive integer' });
+  }
+
+  try {
+    const items = await listTripNotifications(pool, parsedUserId, limitInput);
+    return res.json({ success: true, notifications: items });
+  } catch (err) {
+    console.error('Failed to fetch notifications:', err.message);
+    return res.status(500).json({ success: false, error: 'Failed to fetch notifications' });
+  }
+});
+
+app.post('/api/notifications/:id/read', async (req, res) => {
+  const notificationId = Number(req.params.id);
+  const userIdInput = req.body?.userId || req.query?.userId;
+
+  if (!Number.isInteger(notificationId) || notificationId <= 0) {
+    return res.status(400).json({ success: false, error: 'notification id must be a positive integer' });
+  }
+
+  if (!userIdInput) {
+    return res.status(400).json({ success: false, error: 'userId required' });
+  }
+
+  const parsedUserId = Number(userIdInput);
+  if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+    return res.status(400).json({ success: false, error: 'userId must be a positive integer' });
+  }
+
+  try {
+    const updated = await markTripNotificationRead(pool, parsedUserId, notificationId);
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'notification not found' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to mark notification as read:', err.message);
+    return res.status(500).json({ success: false, error: 'Failed to mark notification as read' });
+  }
+});
+
 // AI response endpoint
 app.post('/api/ask', async (req, res) => {
   const { question, userId } = req.body;
@@ -679,13 +768,27 @@ setInterval(() => {
     .catch(err => console.error("Email reminder check failed:", err));
 }, 10000);
 
+// Trip reminder check every hour
+setInterval(() => {
+  processTripReminders(pool)
+    .then((summary) => {
+      console.log('[Trip Reminder] Hourly processing complete:', {
+        participantsChecked: summary.participantsChecked,
+        emailsSent: summary.emailsSent
+      });
+    })
+    .catch((err) => console.error('[Trip Reminder] Hourly processing failed:', err.message));
+}, 60 * 60 * 1000);
+
 async function startServer() {
   try {
     if (process.env.DATABASE_URL) {
       await ensureSubscriptionsTable();
       await ensureAccountsTable();
+      await ensureTripReminderTables(pool);
       console.log('Subscriptions table is ready');
       console.log('Accounts table is ready');
+      console.log('Trip reminder tables are ready');
     } else {
       console.log('DATABASE_URL not set, skipping database initialization');
     }
