@@ -2,6 +2,12 @@ const nodemailer = require('nodemailer');
 
 function toDateOnly(value) {
   if (!value) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+  }
+
   const asString = String(value).slice(0, 10);
   const [year, month, day] = asString.split('-').map(Number);
   if (!year || !month || !day) return null;
