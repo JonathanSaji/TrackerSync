@@ -616,11 +616,33 @@ app.post('/api/trip-reminders/process', async (req, res) => {
     options.userId = parsedUserId;
   }
 
+  logEvent('TRIP', 'Process Requested', {
+    source: 'api',
+    tripId: options.tripId ?? null,
+    userId: options.userId ?? null,
+    forceReprocess: options.forceReprocess
+  });
+
   try {
     const summary = await processTripReminders(pool, options);
+    logEvent('TRIP', 'Process Completed', {
+      source: 'api',
+      tripId: options.tripId ?? null,
+      userId: options.userId ?? null,
+      forceReprocess: options.forceReprocess,
+      participantsChecked: summary.participantsChecked,
+      emailsSent: summary.emailsSent
+    });
     return res.json({ success: true, summary });
   } catch (err) {
     console.error('Trip reminder processing failed:', err.message);
+    logEvent('TRIP', 'Process Failed', {
+      source: 'api',
+      tripId: options.tripId ?? null,
+      userId: options.userId ?? null,
+      forceReprocess: options.forceReprocess,
+      error: err.message
+    });
     return res.status(500).json({ success: false, error: 'Trip reminder processing failed' });
   }
 });
@@ -780,8 +802,17 @@ setInterval(() => {
         participantsChecked: summary.participantsChecked,
         emailsSent: summary.emailsSent
       });
+      logEvent('TRIP', 'Hourly Process Completed', {
+        participantsChecked: summary.participantsChecked,
+        emailsSent: summary.emailsSent
+      });
     })
-    .catch((err) => console.error('[Trip Reminder] Hourly processing failed:', err.message));
+    .catch((err) => {
+      console.error('[Trip Reminder] Hourly processing failed:', err.message);
+      logEvent('TRIP', 'Hourly Process Failed', {
+        error: err.message
+      });
+    });
 }, 60 * 60 * 1000);
 
 async function startServer() {
