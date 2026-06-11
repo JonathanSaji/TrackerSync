@@ -593,8 +593,12 @@ app.get('/api/accounts-schema-info', async (req, res) => {
 app.post('/api/trip-reminders/process', async (req, res) => {
   const tripIdInput = req.body?.tripId;
   const userIdInput = req.body?.userId;
+  const forceReprocessInput = req.body?.forceReprocess;
 
-  const options = {};
+  const options = {
+    // Confirmation-triggered calls should rerun full digest logic each time.
+    forceReprocess: forceReprocessInput === undefined ? true : Boolean(forceReprocessInput)
+  };
 
   if (tripIdInput !== undefined && tripIdInput !== null && tripIdInput !== '') {
     const parsedTripId = Number(tripIdInput);

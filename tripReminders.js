@@ -472,7 +472,7 @@ async function sendTripEmail(mailer, userEmail, emailPayload) {
   return true;
 }
 
-async function processParticipant(pool, mailer, tripRow) {
+async function processParticipant(pool, mailer, tripRow, options = {}) {
   const trip = {
     trip_id: Number(tripRow.trip_id),
     user_id: Number(tripRow.user_id),
@@ -503,8 +503,10 @@ async function processParticipant(pool, mailer, tripRow) {
   const reminderState = await getReminderStateForTrip(pool, trip.trip_id, trip.user_id, subscriptionIds);
 
   const initialProcessed = await hasTripEvent(pool, trip.trip_id, trip.user_id, 'initial_processed');
+  const shouldForceInitialRun = Boolean(options.forceReprocess);
+  const shouldRunInitialFlow = shouldForceInitialRun || !initialProcessed;
 
-  if (!initialProcessed) {
+  if (shouldRunInitialFlow) {
     if (!subscriptions.length) {
       const emailPayload = buildNoSubscriptionsEmail(trip);
       await sendTripEmail(mailer, userEmail, emailPayload);
@@ -521,7 +523,11 @@ async function processParticipant(pool, mailer, tripRow) {
         payload: { tripWindow: buildTripWindowText(trip), subscriptions: [] }
       });
 
-      return { sent: true, type: 'initial_no_subscriptions', count: 0 };
+      return {
+        sent: true,
+        type: shouldForceInitialRun ? 'forced_initial_no_subscriptions' : 'initial_no_subscriptions',
+        count: 0
+      };
     }
 
     const emailPayload = buildInitialEmail(trip, subscriptions);
@@ -547,7 +553,11 @@ async function processParticipant(pool, mailer, tripRow) {
       }
     });
 
-    return { sent: true, type: 'initial_digest', count: subscriptions.length };
+    return {
+      sent: true,
+      type: shouldForceInitialRun ? 'forced_initial_digest' : 'initial_digest',
+      count: subscriptions.length
+    };
   }
 
   if (!subscriptions.length) {
@@ -616,7 +626,7 @@ async function processTripReminders(pool, options = {}) {
 
   for (const participant of tripParticipants) {
     try {
-      const result = await processParticipant(pool, mailer, participant);
+      const result = await processParticipant(pool, mailer, participant, options);
       if (result.sent) emailsSent += 1;
       results.push({
         tripId: Number(participant.trip_id),
