@@ -1,11 +1,25 @@
 /* ── Design Tokens ─────────────────────────────────── */
 :root {
     --bg-main: #000000;
-    --bg-card: #121212;
-    --accentColour: #ffd700;
-    --accentColour-soft: rgba(255, 215, 0, 0.15);
-    --accent-dim:    rgba(255, 215, 0, 0.12);
-    --accent-glow:   rgba(255, 215, 0, 0.35);
+    --bg-card: #0d0d0d;
+
+    /* ── Colours ──────────────────────────────────────── */
+    /* Main  : #CCFF00  electric lime                      */
+    /* Second: #00E5FF  electric cyan                      */
+    /* Third : #8B5CF6  violet                             */
+    --accentColour:          #CCFF00;
+    --accentColour-soft:     rgba(204, 255, 0, 0.15);
+    --accent-dim:            rgba(204, 255, 0, 0.12);
+    --accent-glow:           rgba(204, 255, 0, 0.35);
+
+    --color-secondary:       #00E5FF;
+    --color-secondary-soft:  rgba(0, 229, 255, 0.15);
+    --color-secondary-glow:  rgba(0, 229, 255, 0.35);
+
+    --color-tertiary:        #8B5CF6;
+    --color-tertiary-soft:   rgba(139, 92, 246, 0.15);
+    --color-tertiary-glow:   rgba(139, 92, 246, 0.35);
+
     --text-main: #ffffff;
     --text-muted: #b3b3b3;
     --border-subtle: #2a2a2a;
@@ -119,7 +133,7 @@ body {
   width: min(410px, calc(100vw - 24px));
   max-height: 430px;
   background: #0a0a0a;
-  border: 1px solid rgba(255, 215, 0, 0.45);
+  border: 1px solid rgba(204, 255, 0, 0.45);
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
   overflow: hidden;
@@ -167,8 +181,8 @@ body {
 }
 
 .notification-item.is-unread {
-  border-color: rgba(255, 215, 0, 0.45);
-  background: #17140a;
+  border-color: rgba(204, 255, 0, 0.45);
+  background: #0d1200;
 }
 
 .notification-item-title {
@@ -250,7 +264,7 @@ body {
   width: 0;
   height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accentColour), #38bdf8);
+  background: linear-gradient(90deg, var(--accentColour), var(--color-secondary));
   transition: width var(--transition-med);
 }
 
@@ -354,7 +368,7 @@ body {
   transform-origin: left;
   transition: transform 0.3s ease;
 }
-.stat-card:hover { border-color: rgba(255,215,0,0.2); transform: translateY(-3px); }
+.stat-card:hover { border-color: rgba(204,255,0,0.2); transform: translateY(-3px); }
 .stat-card:hover::after { transform: scaleX(1); }
 
 
@@ -406,8 +420,8 @@ body {
   border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 600;
-  background: rgba(96,165,250,0.18);
-  color: #93c5fd;
+  background: var(--color-tertiary-soft);
+  color: var(--color-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -435,7 +449,7 @@ body {
   color: #e5e7eb;
 }
 .status-ok     { background: rgba(34,197,94,0.15); color: #4ade80; }
-.status-soon   { background: rgba(255,215,0,0.12); color: var(--accentColour); }
+.status-soon   { background: rgba(204,255,0,0.12); color: var(--accentColour); }
 .status-cancel { background: rgba(239,68,68,0.12); color: #f87171; }
 
 
@@ -698,13 +712,13 @@ input[type="range"]#subValue::-moz-range-thumb {
 
 .btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(34, 197, 94, 0.55);
+  box-shadow: 0 18px 40px var(--accent-glow);
 }
 
 .btn:active {
   transform: translateY(0);
   color: var(--accentColour);
-  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.45);
+  box-shadow: 0 10px 24px var(--accent-dim);
 }
 
 /* Large button variation */
@@ -717,13 +731,13 @@ input[type="range"]#subValue::-moz-range-thumb {
 
 .btn-large:hover {
   transform: translateY(-2px);
-  box-shadow: 0 20px 45px rgba(34, 197, 94, 0.6);
+  box-shadow: 0 20px 45px var(--accent-glow);
 }
 
 .btn-large:active {
   transform: translateY(0);
   color: var(--accentColour);
-  box-shadow: 0 12px 28px rgba(34, 197, 94, 0.5);
+  box-shadow: 0 12px 28px var(--accent-dim);
 }
 
 .app-footer {
@@ -875,7 +889,7 @@ body.auth-locked .modal-overlay {
 .login-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 10, 2, 0.88);
+  background: rgba(2, 5, 2, 0.88);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   display: flex;
@@ -891,11 +905,11 @@ body.auth-locked .modal-overlay {
   border-radius: 22px;
   background: linear-gradient(
     145deg,
-    rgba(41, 24, 5, 0.98),
-    rgba(88, 42, 8, 0.94)
+    rgba(8, 14, 3, 0.98),
+    rgba(18, 28, 5, 0.96)
   );
-  border: 1px solid rgba(250, 204, 21, 0.65);
-  box-shadow: 0 26px 52px rgba(15, 10, 2, 0.9);
+  border: 1px solid rgba(204, 255, 0, 0.55);
+  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.9);
   padding: 26px 24px 22px;
   color: var(--text-main);
 }
@@ -908,7 +922,7 @@ body.auth-locked .modal-overlay {
   font-weight: 700;
   color: var(--accentColour);
   padding: 4px 10px;
-  border: 1px solid rgba(250, 204, 21, 0.35);
+  border: 1px solid rgba(204, 255, 0, 0.35);
   border-radius: 999px;
   margin-bottom: 10px;
 }
@@ -943,8 +957,8 @@ body.auth-locked .modal-overlay {
 
 .login-row input {
   border-radius: 12px;
-  border: 1px solid rgba(250, 204, 21, 0.6);
-  background: rgba(30, 16, 3, 0.9);
+  border: 1px solid rgba(204, 255, 0, 0.45);
+  background: rgba(8, 14, 3, 0.9);
   color: var(--text-main);
   padding: 8px 11px;
   font-size: 0.9rem;
@@ -953,7 +967,7 @@ body.auth-locked .modal-overlay {
 
 .login-row input:focus {
   border-color: var(--accentColour);
-  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.5);
+  box-shadow: 0 0 0 1px rgba(204, 255, 0, 0.45);
 }
 
 .auth-divider {
@@ -972,7 +986,7 @@ body.auth-locked .modal-overlay {
   content: '';
   height: 1px;
   flex: 1;
-  background: linear-gradient(90deg, rgba(250, 204, 21, 0.08), rgba(250, 204, 21, 0.45), rgba(250, 204, 21, 0.08));
+  background: linear-gradient(90deg, rgba(204, 255, 0, 0.08), rgba(204, 255, 0, 0.45), rgba(204, 255, 0, 0.08));
 }
 
 .signup-form {
@@ -1005,7 +1019,7 @@ body.auth-locked .modal-overlay {
 }
 
 .auth-link-btn:hover {
-  color: #f8e88d;
+  color: #e6ff80;
 }
 
 .login-error {
@@ -1128,8 +1142,8 @@ body.auth-locked .modal-overlay {
 }
 
 .ai-message.ai {
-  background: rgba(255,215,0,0.08);
-  border: 1px solid rgba(255,215,0,0.2);
+  background: rgba(204,255,0,0.08);
+  border: 1px solid rgba(204,255,0,0.2);
   align-self: flex-start;
 }
 
@@ -1244,7 +1258,7 @@ body.auth-locked .modal-overlay {
 }
 
 #emailReminderBtn {
-  background-color: #ffd700; /* same as logout button */
+  background-color: var(--accentColour);
   color: #000;
   border: none;
   padding: 8px 16px;
