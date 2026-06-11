@@ -139,6 +139,11 @@ const pool = new Pool({
   }
 });
 
+// Prevent Neon idle-connection resets from crashing the process
+pool.on('error', (err) => {
+  console.error('[DB] Idle client error (connection reset by server):', err.message);
+});
+
 function toNumberOrNull(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
