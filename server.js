@@ -287,7 +287,7 @@ function capitalizeWords(str) {
 }
 
 // Login endpoint (username or email + password)
-app.post('/api/login', async (req, res) => {
+app.post(['/api/login', '/api/auth/login'], async (req, res) => {
   const identifier = (req.body?.identifier ?? req.body?.username ?? '').trim();
   const password = req.body?.password ?? '';
 
