@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 
+const VERBOSE_REMINDER_LOGS = String(process.env.VERBOSE_REMINDER_LOGS || '').toLowerCase() === 'true';
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -57,20 +59,29 @@ function getNextRenewalDate(startDateStr, billingCycle) {
 // Main email sending function
 async function sendEmailReminders(pool) {
   let subscriptions = [];
+  const stats = {
+    loaded: 0,
+    sent: 0,
+    alreadySent: 0,
+    missingAccount: 0,
+    missingFields: 0,
+    accountLookupErrors: 0,
+    sendErrors: 0
+  };
   
   // Fetch subscriptions from database if pool is provided
   if (pool) {
     try {
       const result = await pool.query('SELECT * FROM "TrackerSync".subscriptions WHERE user_id IS NOT NULL');
       subscriptions = result.rows.map(normalizeSubscriptionRow);
-      console.log(`Email reminders loaded ${subscriptions.length} subscriptions from DB`);
+      stats.loaded = subscriptions.length;
     } catch (err) {
-      console.error('Failed to fetch subscriptions from database:', err.message);
+      console.error('[Email Reminder] Failed to fetch subscriptions from database:', err && err.message ? err.message : err);
       return;
     }
   } else {
     // Fallback if pool not provided (backward compatibility)
-    console.error('sendEmailReminders called without pool parameter');
+    console.error('[Email Reminder] sendEmailReminders called without pool parameter');
     return;
   }
 
@@ -86,7 +97,10 @@ async function sendEmailReminders(pool) {
   });
 
   for (const sub of subscriptions) {
-    if (!sub.id || !sub.user_id || !sub.date) continue;
+    if (!sub.id || !sub.user_id || !sub.date) {
+      stats.missingFields += 1;
+      continue;
+    }
 
     // Get the user's email from the accounts table
     let userEmail;
@@ -96,12 +110,16 @@ async function sendEmailReminders(pool) {
         [sub.user_id]
       );
       if (accountResult.rowCount === 0) {
-        console.log(`Skipping subscription ${sub.id}: account not found for user_id ${sub.user_id}`);
+        stats.missingAccount += 1;
+        if (VERBOSE_REMINDER_LOGS) {
+          console.log(`[Email Reminder] Skipping subscription ${sub.id}: account not found for user_id ${sub.user_id}`);
+        }
         continue;
       }
       userEmail = accountResult.rows[0].email;
     } catch (err) {
-      console.error(`Failed to fetch account for subscription ${sub.id}:`, err.message);
+      stats.accountLookupErrors += 1;
+      console.error(`[Email Reminder] Failed to fetch account for subscription ${sub.id}:`, err && err.message ? err.message : err);
       continue;
     }
 
@@ -111,7 +129,10 @@ async function sendEmailReminders(pool) {
     if (dayDiff === 1) {
       // Check if reminder was already sent for this billing date
       if (sub.last_reminder_sent_date === sub.date) {
-        console.log(`Reminder already sent for subscription ${sub.id} (${sub.name}) on date ${sub.date}`);
+        stats.alreadySent += 1;
+        if (VERBOSE_REMINDER_LOGS) {
+          console.log(`[Email Reminder] Reminder already sent for subscription ${sub.id} (${sub.name}) on date ${sub.date}`);
+        }
         continue;
       }
 
@@ -204,19 +225,27 @@ SubSync`;
           text: textBody,
           html: htmlBody
         });
-        console.log(`Reminder sent to ${userEmail} for ${sub.name}: ${info.messageId}`);
+        stats.sent += 1;
+        console.log(`[Email Reminder] Reminder sent to ${userEmail} for ${sub.name}: ${info.messageId}`);
 
         // Update the subscription to mark reminder as sent for this date
         await pool.query(
           'UPDATE "TrackerSync".subscriptions SET last_reminder_sent_date = $1 WHERE id = $2',
           [sub.date, sub.id]
         );
-        console.log(`Updated subscription ${sub.id} last_reminder_sent_date to ${sub.date}`);
+        if (VERBOSE_REMINDER_LOGS) {
+          console.log(`[Email Reminder] Updated subscription ${sub.id} last_reminder_sent_date to ${sub.date}`);
+        }
       } catch (err) {
-        console.error(`Failed to send reminder for subscription ${sub.id}:`, err.message);
+        stats.sendErrors += 1;
+        console.error(`[Email Reminder] Failed to send reminder for subscription ${sub.id}:`, err && err.message ? err.message : err);
       }
     }
   }
+
+  console.log(
+    `[Email Reminder] checked=${stats.loaded} sent=${stats.sent} alreadySent=${stats.alreadySent} missingAccount=${stats.missingAccount} missingFields=${stats.missingFields} accountLookupErrors=${stats.accountLookupErrors} sendErrors=${stats.sendErrors}`
+  );
 }
 
 module.exports = { sendEmailReminders };

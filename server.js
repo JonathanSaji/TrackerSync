@@ -792,12 +792,20 @@ app.post('/api/ask', async (req, res) => {
   }
 });
 
-// Email reminder check every 10 seconds
+const EMAIL_REMINDER_INTERVAL_MS = (() => {
+  const raw = Number(process.env.EMAIL_REMINDER_INTERVAL_MS);
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  return 5 * 60 * 1000;
+})();
+
+// Email reminder check every 5 minutes by default (configurable)
 setInterval(() => {
   sendEmailReminders(pool)
-    .then(() => console.log("Email reminder check completed"))
-    .catch(err => console.error("Email reminder check failed:", err));
-}, 10000);
+    .then(() => console.log('[Email Reminder] Check completed'))
+    .catch(err => console.error('[Email Reminder] Check failed:', err && err.message ? err.message : err));
+}, EMAIL_REMINDER_INTERVAL_MS);
+
+console.log(`[Email Reminder] Scheduler interval: ${EMAIL_REMINDER_INTERVAL_MS}ms`);
 
 // Trip reminder check every hour
 setInterval(() => {
