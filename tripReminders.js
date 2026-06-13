@@ -18,6 +18,11 @@ function ensureSmtpIpv4Preference() {
   }
 }
 
+function lookupIpv4Only(hostname, options, callback) {
+  const normalizedOptions = typeof options === 'object' && options !== null ? options : {};
+  return dns.lookup(hostname, { ...normalizedOptions, family: 4, all: false }, callback);
+}
+
 function toDateOnly(value) {
   if (!value) return null;
 
@@ -476,10 +481,11 @@ function createMailer() {
   ensureSmtpIpv4Preference();
 
   return nodemailer.createTransport({
-    service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
+    family: 4,
+    lookup: lookupIpv4Only,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
@@ -500,7 +506,7 @@ async function sendTripEmail(mailer, userEmail, emailPayload) {
     });
   } catch (err) {
     const smtpHost = mailer?.options?.host || 'smtp.gmail.com';
-    const smtpPort = mailer?.options?.port || 587;
+    const smtpPort = mailer?.options?.port || 465;
     const familyHint = typeof err?.address === 'string' && err.address.includes(':') ? 'ipv6' : 'ipv4_or_unknown';
 
     console.error('[Trip Reminder][SMTP] sendMail failed', {
