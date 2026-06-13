@@ -250,7 +250,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const monthlyAmount = computeMonthlyAmount(amount, billingCycle);
 
         const newSub = {
-            id: Date.now(),
             name,
             amount: monthlyAmount,
             date,
@@ -266,12 +265,12 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log('Saving subscription:', newSub);
         const savedSub = await saveSubscription(newSub); // calls your new function
         console.log('Server save response:', savedSub);
-        logEvent('DB', 'INSERT subscriptions', { subId: newSub.id, name: newSub.name, status: 'success' });
+        logEvent('DB', 'INSERT subscriptions', { subId: savedSub.id, name: savedSub.name, status: 'success' });
         await loadSubscriptions();
         closeSubForm();
         } catch (err) {
             console.error('Subscription save failed:', err);
-            logEvent('DB', 'INSERT subscriptions', { subId: newSub.id, name: newSub.name, status: 'error', error: err.message });
+            logEvent('DB', 'INSERT subscriptions', { subId: null, name: newSub.name, status: 'error', error: err.message });
             errorEl.textContent = "Failed to save. Is the server running?";
         }
             });
@@ -342,7 +341,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const monthlyAmount = computeMonthlyAmount(cost, billingCycle);
 
         const newTrial = {
-            id: Date.now(),
             name,
             amount: monthlyAmount,
             amountPerCycle: cost,
@@ -361,29 +359,15 @@ document.addEventListener("DOMContentLoaded", () => {
         } from merge, dont want this one */ 
 
         try {
-            const res = await fetch('/api/subscriptions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newTrial)
-            });
-
             console.log('Saving trial subscription:', newTrial);
-
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error('Trial save failed:', res.status, errorText);
-                logEvent('DB', 'INSERT subscriptions (trial)', { trialId: newTrial.id, name: newTrial.name, status: 'error', error: `${res.status}: ${errorText}` });
-                throw new Error(`Server responded with ${res.status}`);
-            }
-
-            const savedTrial = await res.json();
+            const savedTrial = await saveSubscription(newTrial);
             console.log('Server trial save response:', savedTrial);
-            logEvent('DB', 'INSERT subscriptions (trial)', { trialId: newTrial.id, name: newTrial.name, status: 'success' });
+            logEvent('DB', 'INSERT subscriptions (trial)', { trialId: savedTrial.id, name: savedTrial.name, status: 'success' });
             await loadSubscriptions();
             closeTrialForm();
         } catch (err) {
             console.error('Trial form error:', err);
-            logEvent('DB', 'INSERT subscriptions (trial)', { trialId: newTrial.id, name: newTrial.name, status: 'error', error: err.message });
+            logEvent('DB', 'INSERT subscriptions (trial)', { trialId: null, name: newTrial.name, status: 'error', error: err.message });
             errorEl.textContent = "Failed to save trial. Is the server running?";
         }
     });

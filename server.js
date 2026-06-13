@@ -286,6 +286,19 @@ function capitalizeWords(str) {
     .join(' ');
 }
 
+function buildSubscriptionIdCandidate(userId) {
+  const rawDigits = String(Math.trunc(Math.abs(Number(userId) || 0)));
+  const sanitizedDigits = rawDigits.replace(/\D/g, '') || '0';
+
+  // Keep at least one random digit so one user can have multiple subscriptions.
+  const prefix = sanitizedDigits.slice(0, 5);
+  const suffixLength = 6 - prefix.length;
+  const suffixMax = 10 ** suffixLength;
+  const suffix = String(Math.floor(Math.random() * suffixMax)).padStart(suffixLength, '0');
+
+  return Number(`${prefix}${suffix}`);
+}
+
 // Login endpoint (username or email + password)
 app.post(['/api/login', '/api/auth/login'], async (req, res) => {
   const identifier = (req.body?.identifier ?? req.body?.username ?? '').trim();
@@ -408,8 +421,12 @@ app.get('/api/subscriptions', async (req, res) => {
 app.post('/api/subscriptions', async (req, res) => {
   const sub = req.body;
   if (!sub.name) return res.status(400).json({ error: 'name required' });
-  if (!sub.id) return res.status(400).json({ error: 'id required' });
   if (!sub.userId) return res.status(400).json({ error: 'userId required' });
+
+  const parsedUserId = Number(sub.userId);
+  if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+    return res.status(400).json({ error: 'userId must be a positive integer' });
+  }
 
   const name = capitalizeWords(sub.name);
   const amount = sub.amount ?? null;
@@ -420,18 +437,36 @@ app.post('/api/subscriptions', async (req, res) => {
   const billingCycle = sub.billingCycle ?? 'Monthly';
   const amountPerCycle = sub.amountPerCycle ?? null;
   const personalValue = sub.personalValue ?? null;
-  const userId = sub.userId;
+  const userId = parsedUserId;
 
   try {
-    const result = await pool.query(
-      `INSERT INTO "TrackerSync".subscriptions (id, user_id, name, amount, date, "subscriptionType", color, "isTrial", "billingCycle", "amountPerCycle", "personalValue")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING *`,
-      [sub.id, userId, name, amount, date, subscriptionType, color, isTrial, billingCycle, amountPerCycle, personalValue]
-    );
-    const savedRow = normalizeSubscriptionRow(result.rows[0]);
-    console.log('[DB] saved subscription:', savedRow);
-    res.status(201).json(savedRow);
+    const maxAttempts = 25;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const generatedId = buildSubscriptionIdCandidate(userId);
+
+      try {
+        const result = await pool.query(
+          `INSERT INTO "TrackerSync".subscriptions (id, user_id, name, amount, date, "subscriptionType", color, "isTrial", "billingCycle", "amountPerCycle", "personalValue")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           RETURNING *`,
+          [generatedId, userId, name, amount, date, subscriptionType, color, isTrial, billingCycle, amountPerCycle, personalValue]
+        );
+
+        const savedRow = normalizeSubscriptionRow(result.rows[0]);
+        console.log('[DB] saved subscription:', savedRow);
+        return res.status(201).json(savedRow);
+      } catch (insertErr) {
+        if (insertErr.code === '23505' && attempt < maxAttempts) {
+          continue;
+        }
+        throw insertErr;
+      }
+    }
+
+    return res.status(500).json({
+      error: 'Failed to generate unique subscription id'
+    });
   } catch (err) {
     console.error('Failed to insert subscription:', {
       code: err.code,
@@ -841,7 +876,7 @@ async function startServer() {
       console.log('DATABASE_URL not set, skipping database initialization');
     }
 
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 3002;
     app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
   } catch (err) {
     console.error('Failed to initialize server:', {
