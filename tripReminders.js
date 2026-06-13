@@ -1,4 +1,22 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+let smtpIpv4PreferenceApplied = false;
+
+function ensureSmtpIpv4Preference() {
+  if (smtpIpv4PreferenceApplied) return;
+
+  const isProductionRuntime = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+  if (!isProductionRuntime) return;
+
+  try {
+    dns.setDefaultResultOrder('ipv4first');
+    smtpIpv4PreferenceApplied = true;
+    console.log('[Trip Reminder][SMTP] DNS result order set to ipv4first');
+  } catch (err) {
+    console.warn('[Trip Reminder][SMTP] Could not set dns result order:', err && err.message ? err.message : err);
+  }
+}
 
 function toDateOnly(value) {
   if (!value) return null;
@@ -455,8 +473,13 @@ async function createTripNotification(pool, { userId, tripId, type, title, messa
 }
 
 function createMailer() {
+  ensureSmtpIpv4Preference();
+
   return nodemailer.createTransport({
     service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
@@ -467,13 +490,32 @@ function createMailer() {
 async function sendTripEmail(mailer, userEmail, emailPayload) {
   if (!userEmail) return false;
 
-  await mailer.sendMail({
-    from: `"TrackerSync" <${process.env.EMAIL_USER}>`,
-    to: userEmail,
-    subject: emailPayload.subject,
-    text: emailPayload.text,
-    html: emailPayload.html
-  });
+  try {
+    await mailer.sendMail({
+      from: `"TrackerSync" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
+      subject: emailPayload.subject,
+      text: emailPayload.text,
+      html: emailPayload.html
+    });
+  } catch (err) {
+    const smtpHost = mailer?.options?.host || 'smtp.gmail.com';
+    const smtpPort = mailer?.options?.port || 587;
+    const familyHint = typeof err?.address === 'string' && err.address.includes(':') ? 'ipv6' : 'ipv4_or_unknown';
+
+    console.error('[Trip Reminder][SMTP] sendMail failed', {
+      host: smtpHost,
+      port: smtpPort,
+      familyHint,
+      code: err?.code,
+      errno: err?.errno,
+      syscall: err?.syscall,
+      address: err?.address,
+      error: err?.message
+    });
+
+    throw err;
+  }
 
   return true;
 }
